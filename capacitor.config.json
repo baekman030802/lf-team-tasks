@@ -1,0 +1,8 @@
+{
+  "appId": "com.libfriend.teamtasks",
+  "appName": "LF 팀 할일",
+  "webDir": "www",
+  "plugins": {
+    "LocalNotifications": { "iconColor": "#2a4fd6" }
+  }
+}

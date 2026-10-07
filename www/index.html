@@ -1,0 +1,527 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LIBFRIEND 팀 할일</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: phone-first single column, bottom tabs. Multi-day work appears on each of its days as "2/3일차", never as a long calendar bar. */
+:root{
+  --bg:#f1f3f6; --paper:#ffffff; --ink:#151b28; --muted:#5d6678; --line:#d9dee7; --soft:#e8ecf3;
+  --accent:#2a4fd6; --accent-soft:#e3e9fd; --on-accent:#ffffff;
+  --good:#1d7a4b; --good-bg:#ddf0e5; --warn:#9a5b00; --warn-bg:#f8ead3; --bad:#b3302b; --bad-bg:#f8dedc;
+  --e0:#2a4fd6; --e1:#c2410c; --e2:#0f766e; --e3:#9333ea; --e4:#b45309; --e5:#be185d;
+  --f-body:"IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e121a; --paper:#161c27; --ink:#e4e8f0; --muted:#97a1b4; --line:#2a3242; --soft:#1e2532;
+  --accent:#7e9bff; --accent-soft:#1f2a4d; --on-accent:#0e121a;
+  --good:#6fd39b; --good-bg:#16302a; --warn:#eab063; --warn-bg:#3a2b14; --bad:#f28c86; --bad-bg:#3d1d1c;
+  --e0:#7e9bff; --e1:#fb8a5c; --e2:#4fd1c0; --e3:#c99bff; --e4:#f2b45a; --e5:#f47fb4; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e121a; --paper:#161c27; --ink:#e4e8f0; --muted:#97a1b4; --line:#2a3242; --soft:#1e2532;
+  --accent:#7e9bff; --accent-soft:#1f2a4d; --on-accent:#0e121a;
+  --good:#6fd39b; --good-bg:#16302a; --warn:#eab063; --warn-bg:#3a2b14; --bad:#f28c86; --bad-bg:#3d1d1c;
+  --e0:#7e9bff; --e1:#fb8a5c; --e2:#4fd1c0; --e3:#c99bff; --e4:#f2b45a; --e5:#f47fb4; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+body{margin:0;color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:14px 120px;display:flex;flex-direction:column;gap:14px}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+h1{margin:0;font-size:1.15rem;letter-spacing:-.01em}
+.date{font-family:var(--f-num);font-size:.8rem;color:var(--muted)}
+h2{margin:0;font-size:.75rem;font-weight:500;color:var(--muted);letter-spacing:.06em;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.view{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px;min-width:0}
+.muted{color:var(--muted)}
+.hint{font-size:.75rem;color:var(--muted)}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.tag{font-size:.68rem;padding:1px 7px;border-radius:99px;background:var(--soft);color:var(--muted);white-space:nowrap}
+.pill{font-size:.72rem;font-weight:500;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.p-good{background:var(--good-bg);color:var(--good)}.p-warn{background:var(--warn-bg);color:var(--warn)}.p-bad{background:var(--bad-bg);color:var(--bad)}.p-acc{background:var(--accent-soft);color:var(--accent)}
+.dot{width:10px;height:10px;border-radius:50%;flex:0 0 10px;background:var(--c,var(--accent))}
+
+/* alerts */
+.alerts{display:grid;gap:6px}
+.alert{display:flex;gap:8px;align-items:center;font-size:.85rem;padding:8px 10px;border-radius:8px}
+
+/* today: employee blocks */
+.emp-head{display:flex;align-items:center;gap:8px;min-width:0}
+.emp-head b{font-size:.98rem}
+.emp-head .load{margin-left:auto;font-family:var(--f-num);font-size:.8rem;color:var(--muted)}
+.bar{height:6px;border-radius:99px;background:var(--soft);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--c,var(--accent));border-radius:99px}
+.slice{display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);cursor:pointer}
+.slice:first-of-type{border-top:0}
+.slice .hrs{font-family:var(--f-num);font-weight:600;font-size:.95rem;min-width:44px}
+.slice .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.slice .sub{grid-column:2/4;font-size:.74rem;color:var(--muted);display:flex;gap:4px 10px;flex-wrap:wrap}
+.daystep{font-family:var(--f-num);font-size:.72rem;font-weight:600;padding:1px 7px;border-radius:6px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.steps{display:inline-flex;gap:3px;vertical-align:middle}
+.steps span{width:14px;height:5px;border-radius:2px;background:var(--line)}
+.steps span.on{background:var(--c,var(--accent))}
+.steps span.done{background:var(--muted);opacity:.5}
+.empty{font-size:.85rem;color:var(--muted);padding:6px 0}
+
+/* week grid */
+.wk-nav{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.wk-nav b{font-family:var(--f-num);font-size:.85rem}
+.scroll{overflow-x:auto;margin-inline:-14px;padding-inline:14px}
+table.wk{border-collapse:separate;border-spacing:4px;min-width:560px;width:100%}
+.wk th{font-size:.72rem;font-weight:500;color:var(--muted);text-align:left;padding:0 2px}
+.wk th.today{color:var(--accent)}
+.wk th.off{opacity:.5}
+.wk td{vertical-align:top;background:var(--soft);border-radius:8px;padding:6px;min-width:72px;height:64px}
+.wk td.name{background:transparent;min-width:64px;font-size:.8rem;font-weight:500;padding:6px 2px}
+.wk td.off{background:transparent;border:1px dashed var(--line)}
+.wk td.over{box-shadow:inset 0 0 0 2px var(--bad)}
+.wk .h{font-family:var(--f-num);font-size:.75rem;font-weight:600}
+.wk .chip{display:block;font-size:.68rem;line-height:1.3;margin-top:3px;padding:2px 5px;border-radius:5px;background:var(--paper);border-left:3px solid var(--c);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;cursor:pointer}
+.wk .chip em{font-style:normal;font-family:var(--f-num);font-weight:600;color:var(--c)}
+.wk .chip.late{border-left-color:var(--bad)}
+
+/* task list */
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.fbtn{font:500 .78rem var(--f-body);border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:99px;padding:5px 11px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.fbtn[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.task{display:grid;gap:6px;padding:10px 0;border-top:1px solid var(--line)}
+.task:first-of-type{border-top:0}
+.task .row1{display:flex;gap:8px;align-items:center;min-width:0}
+.task .row1 .t{font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;cursor:pointer}
+.task.done .t{text-decoration:line-through;color:var(--muted)}
+.task .meta{font-size:.75rem;color:var(--muted);display:flex;gap:4px 12px;flex-wrap:wrap;align-items:center}
+.prog{display:flex;gap:4px;flex-wrap:wrap}
+.prog button{font:500 .72rem var(--f-num);padding:3px 8px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+.prog button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+
+/* forms */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.full{grid-column:1/-1}
+label{display:grid;gap:4px;font-size:.8rem;color:var(--muted);min-width:0}
+input,select,textarea{width:100%;font:500 .95rem var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+textarea{min-height:64px;resize:vertical}
+.pair{display:flex;gap:6px}
+.pair input{flex:1;min-width:0}.pair select{width:auto}
+button{font:500 .85rem var(--f-body);border-radius:8px;padding:9px 14px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);cursor:pointer}
+button.ghost{background:transparent;color:var(--accent)}
+button.plain{background:transparent;border-color:var(--line);color:var(--ink)}
+button.danger{background:transparent;border-color:var(--bad);color:var(--bad)}
+button:focus-visible,.fbtn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.days{display:flex;gap:4px;flex-wrap:wrap}
+.days button{padding:6px 10px;min-width:38px}
+.days button[aria-pressed=false]{background:transparent;color:var(--muted);border-color:var(--line)}
+.emp-row{display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.emp-row:first-child{border-top:0}
+.emp-row .n{flex:1;min-width:0;font-weight:500}
+.emp-row input{width:64px;padding:6px 8px;font-family:var(--f-num)}
+
+/* sheet */
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(10,14,22,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet[hidden]{display:none!important}
+.sheet .panel{background:var(--paper);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px));display:grid;gap:12px}
+.sheet h3{margin:0;font-size:1rem}
+
+/* fab + tabs */
+.fab{position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:11;border-radius:99px;padding:13px 18px;font-weight:700;box-shadow:0 8px 20px -8px rgba(20,30,60,.5)}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--paper);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);display:flex;justify-content:center}
+nav.tabs div{display:flex;width:100%;max-width:640px}
+nav.tabs button{flex:1;border:0;border-radius:0;background:transparent;color:var(--muted);padding:13px 4px;font:500 .85rem var(--f-body)}
+nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(130px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);font-size:.85rem;padding:8px 14px;border-radius:8px;z-index:30}
+@media (prefers-reduced-motion:no-preference){.sheet .panel{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+</head><body>
+
+<div class="wrap">
+  <header>
+    <h1>LIBFRIEND 팀 할일</h1>
+    <span class="date" id="todayLbl"></span>
+  </header>
+
+  <!-- 오늘 -->
+  <div class="view" id="v-today">
+    <div class="alerts" id="alerts"></div>
+    <div id="todayList" class="view"></div>
+  </div>
+
+  <!-- 주간 -->
+  <div class="view" id="v-week" hidden>
+    <section class="card">
+      <div class="wk-nav">
+        <button class="plain" id="wkPrev" aria-label="이전 주">‹</button>
+        <b id="wkLbl"></b>
+        <button class="plain" id="wkNext" aria-label="다음 주">›</button>
+      </div>
+      <div class="scroll"><table class="wk" id="wk"></table></div>
+      <span class="hint">칩의 2/3은 3일짜리 일의 2일차라는 뜻입니다. 빨간 칩은 마감을 넘기는 일입니다.</span>
+    </section>
+  </div>
+
+  <!-- 할일 -->
+  <div class="view" id="v-tasks" hidden>
+    <section class="card">
+      <h2>할일 목록 <span id="taskCnt"></span></h2>
+      <div class="filters" id="filters"></div>
+      <div id="taskList"></div>
+    </section>
+  </div>
+
+  <!-- 직원·설정 -->
+  <div class="view" id="v-team" hidden>
+    <section class="card">
+      <h2>직원</h2>
+      <div id="empList"></div>
+      <div class="pair"><input id="newEmp" type="text" placeholder="직원 이름" autocomplete="off"><button id="addEmp">추가</button></div>
+    </section>
+    <section class="card">
+      <h2>근무 요일</h2>
+      <div class="days" id="workdays"></div>
+      <span class="hint">근무 요일만 작업일로 셉니다. 3일짜리 일이 금요일에 시작하면 금·토·월로 잡힙니다.</span>
+    </section>
+    <section class="card">
+      <h2>알림</h2>
+      <div class="btns"><button id="notiBtn">알림 켜기</button><span class="hint" id="notiState"></span></div>
+      <label id="alarmRow" hidden>매일 알림 시각<input id="alarmTime" type="time" value="09:00"></label>
+      <span class="hint" id="notiHelp">마감 오늘·내일, 마감을 넘길 것 같은 일을 하루 한 번 알려줍니다. 웹 페이지에서는 이 화면이 열려 있을 때만 알림이 옵니다. 갤럭시 앱(APK)에서는 앱이 꺼져 있어도 정해진 시각에 알림이 오고, 홈 화면 위젯도 쓸 수 있습니다.</span>
+    </section>
+    <section class="card">
+      <h2>데이터</h2>
+      <div class="btns"><button class="plain" id="clearEx">예시 데이터 지우기</button></div>
+      <span class="hint">데이터는 이 기기 브라우저에만 저장됩니다.</span>
+    </section>
+  </div>
+</div>
+
+<button class="fab" id="fab">+ 할일</button>
+
+<nav class="tabs"><div role="tablist">
+  <button role="tab" data-v="today" aria-selected="true">오늘</button>
+  <button role="tab" data-v="week" aria-selected="false">주간</button>
+  <button role="tab" data-v="tasks" aria-selected="false">할일</button>
+  <button role="tab" data-v="team" aria-selected="false">직원</button>
+</div></nav>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="shTitle">
+    <h3 id="shTitle">할일 추가</h3>
+    <div class="grid">
+      <label class="full">할일<input id="fTitle" type="text" autocomplete="off" placeholder="예: 북엔드 아마존 이미지 7장 교체"></label>
+      <label>담당 직원<select id="fEmp"></select></label>
+      <label>우선순위<select id="fPri"><option value="2">높음</option><option value="1" selected>보통</option><option value="0">낮음</option></select></label>
+      <label>시작일<input id="fStart" type="date"></label>
+      <label>데드라인<input id="fDue" type="date"></label>
+      <label class="full">예상 기간 (근무일)<div class="pair"><input id="fEst" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 3"><span class="hint" style="align-self:center">일</span></div></label>
+      <span class="hint full" id="fPreview"></span>
+      <label class="full">메모<textarea id="fNote" placeholder="필요한 자료, 참고 링크 등"></textarea></label>
+    </div>
+    <div class="btns">
+      <button id="fSave">저장</button><button class="plain" id="fCancel">닫기</button>
+      <button class="danger" id="fDel" style="margin-left:auto" hidden>삭제</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="capacitor.js"></script>
+<script>
+(function(){
+'use strict';
+const K='lf_team_tasks_v2';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const num=v=>{const x=parseFloat(String(v??'').replace(/,/g,''));return isFinite(x)?x:0};
+const DOW=['일','월','화','수','목','금','토'];
+
+// ---------- dates (local, YYYY-MM-DD) ----------
+const pad=n=>String(n).padStart(2,'0');
+const fmt=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const add=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return fmt(d)};
+const diff=(a,b)=>Math.round((parse(b)-parse(a))/864e5);
+const TODAY=()=>fmt(new Date());
+const md=s=>{const d=parse(s);return `${d.getMonth()+1}/${d.getDate()}(${DOW[d.getDay()]})`};
+const dday=s=>{const n=diff(TODAY(),s);return n===0?'D-day':n>0?`D-${n}`:`D+${-n}`};
+
+// ---------- state ----------
+function sample(){
+  const t=TODAY();
+  const e=[{id:'e1',name:'예시 직원 A',c:0,ex:1},{id:'e2',name:'예시 직원 B',c:1,ex:1}];
+  const T=(id,emp,title,start,due,est,pri,prog)=>({id,emp,title,start:add(t,start),due:add(t,due),est,pri,prog,note:'',ex:1,created:Date.now()});
+  return {emps:e,workdays:[1,2,3,4,5,6],tasks:[
+    T('t1','e1','북엔드 아마존 리스팅 이미지 교체',-1,2,3,2,25),
+    T('t2','e1','마그네틱 라벨홀더 재고 실사',0,1,1,1,0),
+    T('t3','e1','기관 견적서 3곳 발송',1,6,2,1,0),
+    T('t4','e2','10월 자사몰 주문 포장·출고',0,0,1,2,50),
+    T('t5','e2','인스타그램 릴스 2편 편집',0,4,2,1,0),
+    T('t6','e2','CHA에 BE 표기 문의 정리',2,3,1,0,0)
+  ],notified:{}};
+}
+function migrate(){const o=store.get('lf_team_tasks_v1',null);if(!o)return null;
+  o.tasks.forEach(t=>{const e=o.emps.find(x=>x.id===t.emp),cap=e&&e.cap>0?e.cap:8;t.est=Math.max(1,Math.ceil(t.unit==='d'?+t.est:(+t.est)/cap));delete t.unit});
+  o.emps.forEach(e=>delete e.cap);return o}
+let S=store.get(K,null)||migrate()||sample();
+const save=()=>{store.set(K,S);if(window.__lfSync)window.__lfSync()};
+const empOf=id=>S.emps.find(e=>e.id===id);
+const colorOf=e=>`var(--e${(e?e.c:0)%6})`;
+const isWork=s=>S.workdays.includes(parse(s).getDay());
+const estD=t=>Math.max(1,Math.round(num(t.est)));
+
+// ---------- scheduler: each task takes its first N workdays from its start date ----------
+// returns {byTask:{id:{days:[date],finish,late}}, byDay:{emp:{date:[taskId]}}}
+function schedule(){
+  const out={byTask:{},byDay:{}};
+  S.emps.forEach(e=>out.byDay[e.id]={});
+  S.tasks.forEach(t=>{
+    const n=estD(t),days=[];let d=t.start,g=0;
+    while(days.length<n&&g++<400){if(isWork(d))days.push(d);d=add(d,1)}
+    const finish=days[days.length-1]||t.start;
+    out.byTask[t.id]={days,finish,late:finish>t.due};
+    if(num(t.prog)>=100||!out.byDay[t.emp])return;
+    days.forEach(x=>(out.byDay[t.emp][x]=out.byDay[t.emp][x]||[]).push(t.id));
+  });
+  return out;
+}
+function stepsHTML(alloc,idx,c){
+  if(alloc.length<2)return '';
+  const n=Math.min(alloc.length,10);
+  return `<span class="steps" style="--c:${c}" aria-hidden="true">${alloc.slice(0,n).map((_,i)=>`<span class="${i<idx?'done':i===idx?'on':''}"></span>`).join('')}</span>`;
+}
+
+// ---------- 오늘 ----------
+function renderToday(sc){
+  const t=TODAY();
+  $('todayLbl').textContent=md(t);
+  // alerts
+  const al=[];
+  S.tasks.filter(x=>num(x.prog)<100).forEach(x=>{
+    const e=empOf(x.emp),info=sc.byTask[x.id]||{},n=diff(t,x.due);
+    if(n<0)al.push(['p-bad',`마감 지남 ${dday(x.due)}`,x,e]);
+    else if(n===0)al.push(['p-bad','오늘 마감',x,e]);
+    else if(info.late)al.push(['p-warn',`마감 넘길 위험 · 예상 끝 ${md(info.finish)}`,x,e]);
+    else if(n===1)al.push(['p-warn','내일 마감',x,e]);
+  });
+  $('alerts').innerHTML=al.map(a=>`<div class="alert ${a[0]}" data-edit="${a[2].id}" style="cursor:pointer"><b>${a[1]}</b><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a[2].title)} · ${esc(a[3]?a[3].name:'')}</span></div>`).join('');
+  // per employee: tasks whose days include today, plus unfinished ones whose planned days already ended
+  $('todayList').innerHTML=S.emps.length?S.emps.map(e=>{
+    const c=colorOf(e);
+    const ids=((sc.byDay[e.id]||{})[t]||[]).slice();
+    S.tasks.filter(x=>x.emp===e.id&&num(x.prog)<100&&sc.byTask[x.id].finish<t).forEach(x=>ids.push(x.id));
+    const rows=ids.map(id=>{
+      const k=S.tasks.find(x=>x.id===id), info=sc.byTask[id], idx=info.days.indexOf(t), n=info.days.length, over=idx<0;
+      const step=over?'<span class="daystep" style="background:var(--bad-bg);color:var(--bad)">기간 초과</span>':n>1?`<span class="daystep">${idx+1}/${n}일차</span>`:'<span class="daystep">하루</span>';
+      return `<div class="slice" data-edit="${id}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span>${step}
+        <span class="sub">${over?'':stepsHTML(info.days,idx,c)}<span>마감 ${md(k.due)} · ${dday(k.due)}</span><span>진행 ${num(k.prog)}%</span>${info.late&&!over?'<span class="pill p-warn">마감 위험</span>':''}${k.ex?'<span class="tag">예시</span>':''}</span></div>`}).join('');
+    return `<section class="card" style="--c:${c}"><div class="emp-head"><span class="dot"></span><b>${esc(e.name)}</b><span class="load">오늘 ${ids.length}건</span></div>
+      ${rows||'<div class="empty">오늘 할 일이 없습니다</div>'}</section>`}).join('')
+  :'<section class="card"><div class="empty">직원 탭에서 직원을 먼저 추가하세요.</div></section>';
+}
+
+// ---------- 주간 ----------
+let wkStart=null;
+function mondayOf(s){const d=parse(s);const k=(d.getDay()+6)%7;d.setDate(d.getDate()-k);return fmt(d)}
+function renderWeek(sc){
+  if(!wkStart)wkStart=TODAY();
+  const days=[...Array(7)].map((_,i)=>add(wkStart,i)),t=TODAY();
+  $('wkLbl').textContent=`${md(days[0])} – ${md(days[6])}`;
+  let h='<tr><th></th>'+days.map(d=>`<th class="${d===t?'today':''} ${isWork(d)?'':'off'}">${md(d)}</th>`).join('')+'</tr>';
+  S.emps.forEach(e=>{
+    const c=colorOf(e);
+    h+=`<tr><td class="name"><span style="display:inline-flex;gap:6px;align-items:center"><span class="dot" style="--c:${c}"></span>${esc(e.name)}</span></td>`;
+    days.forEach(d=>{
+      const sl=(sc.byDay[e.id]||{})[d]||[];
+      if(!isWork(d)){h+='<td class="off"></td>';return}
+      h+=`<td>${sl.map(id=>{const k=S.tasks.find(x=>x.id===id),info=sc.byTask[id],i=info.days.indexOf(d),n=info.days.length;
+        return `<span class="chip ${info.late?'late':''}" style="--c:${c}" data-edit="${id}" title="${esc(k.title)}">${n>1?`<em>${i+1}/${n}</em> `:''}${esc(k.title)}</span>`}).join('')}</td>`;
+    });
+    h+='</tr>';
+  });
+  $('wk').innerHTML=h;
+}
+
+// ---------- 할일 ----------
+let filt='all';
+function renderTasks(sc){
+  $('filters').innerHTML=[['all','전체',null],...S.emps.map(e=>[e.id,e.name,e]),['done','완료',null]].map(([id,n,e])=>`<button class="fbtn" data-f="${id}" aria-pressed="${filt===id}">${e?`<span class="dot" style="--c:${colorOf(e)}"></span>`:''}${esc(n)}</button>`).join('');
+  const list=S.tasks.filter(t=>filt==='done'?num(t.prog)>=100:(num(t.prog)<100&&(filt==='all'||t.emp===filt)))
+    .sort((a,b)=>a.due.localeCompare(b.due)||b.pri-a.pri);
+  $('taskCnt').textContent=list.length+'개';
+  $('taskList').innerHTML=list.length?list.map(t=>{
+    const e=empOf(t.emp),info=sc.byTask[t.id]||{days:[]},n=info.days.length,dn=diff(TODAY(),t.due);
+    const span=n?(n>1?`${md(info.days[0])} → ${md(info.finish)}`:`${md(info.days[0])} 하루`):'';
+    const st=num(t.prog)>=100?'<span class="pill p-good">완료</span>':dn<0?'<span class="pill p-bad">마감 지남</span>':info.late?'<span class="pill p-warn">마감 위험</span>':dn<=1?'<span class="pill p-warn">'+dday(t.due)+'</span>':'';
+    return `<div class="task ${num(t.prog)>=100?'done':''}">
+      <div class="row1"><span class="dot" style="--c:${colorOf(e)}"></span><span class="t" data-edit="${t.id}">${esc(t.title)}</span>${st}</div>
+      <div class="meta"><span>${esc(e?e.name:'담당 없음')}</span><span>마감 ${md(t.due)} ${dday(t.due)}</span><span>예상 ${estD(t)}일</span>${span?`<span>${span}</span>`:''}${['낮음','','높음'][t.pri]?`<span class="tag">${['낮음','','높음'][t.pri]}</span>`:''}${t.ex?'<span class="tag">예시</span>':''}</div>
+      <div class="prog" role="group" aria-label="진행률">${[0,25,50,75,100].map(p=>`<button data-prog="${t.id}" data-p="${p}" aria-pressed="${num(t.prog)===p}">${p===100?'완료':p+'%'}</button>`).join('')}</div>
+    </div>`}).join(''):'<div class="empty">할일이 없습니다. 오른쪽 아래 + 할일로 추가하세요.</div>';
+}
+
+// ---------- 직원·설정 ----------
+function renderTeam(){
+  $('empList').innerHTML=S.emps.length?S.emps.map(e=>`<div class="emp-row"><span class="dot" style="--c:${colorOf(e)}"></span><span class="n">${esc(e.name)}${e.ex?' <span class="tag">예시</span>':''}</span><span class="hint">${S.tasks.filter(t=>t.emp===e.id&&num(t.prog)<100).length}건 진행 중</span><button class="ghost" data-delemp="${e.id}">삭제</button></div>`).join(''):'<div class="empty">아직 직원이 없습니다</div>';
+  $('workdays').innerHTML=[1,2,3,4,5,6,0].map(d=>`<button data-wd="${d}" aria-pressed="${S.workdays.includes(d)}">${DOW[d]}</button>`).join('');
+  notiState();
+}
+
+// ---------- render all ----------
+let cur='today';
+function render(){
+  const sc=schedule();
+  renderToday(sc);
+  if(cur==='week')renderWeek(sc);
+  if(cur==='tasks')renderTasks(sc);
+  if(cur==='team')renderTeam();
+  checkNotify(sc);
+}
+function show(v){
+  cur=v;
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===v));
+  ['today','week','tasks','team'].forEach(x=>$('v-'+x).hidden=x!==v);
+  $('fab').hidden=v==='team';
+  render();window.scrollTo({top:0});
+}
+document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>show(b.dataset.v)));
+
+// ---------- sheet (add/edit) ----------
+let editId=null;
+function openSheet(id){
+  if(!S.emps.length){toast('먼저 직원을 추가하세요');show('team');return}
+  editId=id||null;const t=id?S.tasks.find(x=>x.id===id):null,today=TODAY();
+  $('shTitle').textContent=t?'할일 수정':'할일 추가';
+  $('fEmp').innerHTML=S.emps.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  $('fTitle').value=t?t.title:'';
+  $('fEmp').value=t?t.emp:(filt!=='all'&&filt!=='done'&&empOf(filt)?filt:S.emps[0].id);
+  $('fPri').value=t?String(t.pri):'1';
+  $('fStart').value=t?t.start:today;
+  $('fDue').value=t?t.due:add(today,3);
+  $('fEst').value=t?t.est:'';
+  $('fNote').value=t?t.note:'';
+  $('fDel').hidden=!t;delete $('fDel').dataset.arm;$('fDel').textContent='삭제';
+  $('sheet').hidden=false;preview();setTimeout(()=>$('fTitle').focus(),50);
+}
+function closeSheet(){$('sheet').hidden=true;editId=null}
+function preview(){
+  const n=Math.round(num($('fEst').value)),s=$('fStart').value,d=$('fDue').value;
+  if(!(n>0)||!s||!d){$('fPreview').textContent='예상 기간을 넣으면 언제 끝날지 미리 보여줍니다.';return}
+  const days=[];let x=s,g=0;while(days.length<n&&g++<400){if(isWork(x))days.push(x);x=add(x,1)}
+  const end=days[days.length-1];
+  $('fPreview').textContent=`${md(s)} 시작 → ${md(end)} 끝 예정 (근무일 ${n}일)`+(end>d?` · 마감 ${md(d)}보다 늦습니다`:` · 마감까지 여유 ${diff(end,d)}일`);
+}
+['fEmp','fEst','fStart','fDue'].forEach(id=>$(id).addEventListener('input',preview));
+$('fSave').addEventListener('click',()=>{
+  const title=$('fTitle').value.trim();
+  if(!title){toast('할일 이름을 넣어주세요');$('fTitle').focus();return}
+  if(!(Math.round(num($('fEst').value))>0)){toast('예상 기간(일)을 넣어주세요');$('fEst').focus();return}
+  let start=$('fStart').value||TODAY(),due=$('fDue').value||start;
+  if(due<start){toast('데드라인이 시작일보다 빠릅니다');return}
+  const data={title,emp:$('fEmp').value,pri:+$('fPri').value,start,due,est:Math.max(1,Math.round(num($('fEst').value))),note:$('fNote').value};
+  if(editId){Object.assign(S.tasks.find(x=>x.id===editId),data,{ex:0})}
+  else S.tasks.push({id:'t'+Date.now(),prog:0,created:Date.now(),...data});
+  save();closeSheet();render();toast(editId?'수정했습니다':'추가했습니다');
+});
+$('fCancel').addEventListener('click',closeSheet);
+$('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))closeSheet()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('sheet').hidden)closeSheet()});
+$('fDel').addEventListener('click',()=>{
+  const b=$('fDel');if(!b.dataset.arm){b.dataset.arm=1;b.textContent='한 번 더 누르면 삭제';return}
+  S.tasks=S.tasks.filter(x=>x.id!==editId);save();closeSheet();render();toast('삭제했습니다');
+});
+$('fab').addEventListener('click',()=>openSheet());
+
+// delegated clicks
+document.addEventListener('click',e=>{
+  const ed=e.target.closest('[data-edit]');if(ed&&!e.target.closest('.sheet')){openSheet(ed.dataset.edit);return}
+  const pg=e.target.closest('[data-prog]');if(pg){const t=S.tasks.find(x=>x.id===pg.dataset.prog);t.prog=+pg.dataset.p;save();render();if(t.prog===100)toast('완료 처리했습니다');return}
+  const f=e.target.closest('[data-f]');if(f){filt=f.dataset.f;render();return}
+  const wd=e.target.closest('[data-wd]');if(wd){const d=+wd.dataset.wd;S.workdays=S.workdays.includes(d)?S.workdays.filter(x=>x!==d):[...S.workdays,d];save();render();return}
+  const de=e.target.closest('[data-delemp]');if(de){
+    const id=de.dataset.delemp,cnt=S.tasks.filter(t=>t.emp===id).length;
+    if(cnt&&!de.dataset.arm){de.dataset.arm=1;de.textContent=`할일 ${cnt}개도 삭제`;return}
+    S.emps=S.emps.filter(x=>x.id!==id);S.tasks=S.tasks.filter(t=>t.emp!==id);if(filt===id)filt='all';save();render();return}
+});
+$('addEmp').addEventListener('click',addEmp);
+$('newEmp').addEventListener('keydown',e=>{if(e.key==='Enter')addEmp()});
+function addEmp(){const n=$('newEmp').value.trim();if(!n){$('newEmp').focus();return}
+  const used=S.emps.map(e=>e.c);let c=0;while(used.includes(c)&&c<6)c++;
+  S.emps.push({id:'e'+Date.now(),name:n,c:c%6});$('newEmp').value='';save();render();toast(n+' 추가');}
+$('clearEx').addEventListener('click',()=>{S.tasks=S.tasks.filter(t=>!t.ex);const keep=new Set(S.tasks.map(t=>t.emp));S.emps=S.emps.filter(e=>!e.ex||keep.has(e.id));save();render();toast('예시를 지웠습니다')});
+$('wkPrev').addEventListener('click',()=>{wkStart=add(wkStart,-7);render()});
+$('wkNext').addEventListener('click',()=>{wkStart=add(wkStart,7);render()});
+
+// ---------- notifications ----------
+function notiState(){
+  const ok='Notification' in window;
+  $('notiState').textContent=!ok?'이 화면에서는 알림을 쓸 수 없습니다 (앱 단계에서 지원)':Notification.permission==='granted'?'켜짐':Notification.permission==='denied'?'브라우저 설정에서 차단됨':'꺼짐';
+  $('notiBtn').hidden=!ok||Notification.permission==='granted';
+}
+$('notiBtn').addEventListener('click',async()=>{try{await Notification.requestPermission()}catch(e){}notiState();render()});
+function checkNotify(sc){
+  if((window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())||!('Notification' in window)||Notification.permission!=='granted')return;
+  const t=TODAY();S.notified=S.notified||{};
+  S.tasks.filter(x=>num(x.prog)<100).forEach(x=>{
+    const n=diff(t,x.due),info=sc.byTask[x.id]||{},e=empOf(x.emp);
+    const msg=n<0?'마감이 지났습니다':n===0?'오늘 마감':n===1?'내일 마감':info.late?`마감을 넘길 위험 (예상 끝 ${md(info.finish)})`:null;
+    if(!msg)return;const key=x.id+'|'+t;if(S.notified[key])return;
+    try{new Notification(`${msg} · ${e?e.name:''}`,{body:x.title,tag:key});S.notified[key]=1}catch(err){}
+  });
+  save();
+}
+setInterval(()=>render(),60000);
+
+let tt;function toast(m){const el=$('toast');el.textContent=m;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,1800)}
+// ---------- 갤럭시 앱(Capacitor) 전용: 위젯 데이터 + 예약 알림 ----------
+const CAP=window.Capacitor, NATIVE=!!(CAP&&CAP.isNativePlatform&&CAP.isNativePlatform());
+const P=NATIVE&&CAP.registerPlugin?{Preferences:CAP.registerPlugin('Preferences'),LocalNotifications:CAP.registerPlugin('LocalNotifications'),WidgetBridge:CAP.registerPlugin('WidgetBridge')}:{};
+function widgetData(sc){
+  const t=TODAY(),days={};
+  for(let i=0;i<14;i++){
+    const d=add(t,i),lines=[];let n=0;
+    S.emps.forEach(e=>{
+      const ids=((sc.byDay[e.id]||{})[d]||[]).slice();
+      if(i===0)S.tasks.filter(x=>x.emp===e.id&&num(x.prog)<100&&sc.byTask[x.id].finish<t).forEach(x=>ids.push(x.id));
+      ids.forEach(id=>{const k=S.tasks.find(x=>x.id===id),info=sc.byTask[id],j=info.days.indexOf(d),m=info.days.length;n++;
+        lines.push(`${e.name} · ${k.title}`+(j<0?' (기간 초과)':m>1?` (${j+1}/${m})`:'')+(k.due===d?' · 오늘 마감':''))});
+    });
+    days[d]={title:`${md(d)} · 할일 ${n}건`,lines};
+  }
+  return {days,updated:new Date().toISOString()};
+}
+function hm(){const v=(S.alarm||'09:00').split(':');return [+v[0]||9,+v[1]||0]}
+function at(d,h,m){const x=parse(d);x.setHours(h,m,0,0);return x}
+async function syncNative(){
+  if(!NATIVE)return;
+  const sc=schedule();
+  try{await P.Preferences.set({key:'widget',value:JSON.stringify(widgetData(sc))});if(P.WidgetBridge)await P.WidgetBridge.refresh()}catch(e){}
+  try{
+    const perm=await P.LocalNotifications.checkPermissions();if(perm.display!=='granted')return;
+    const pend=await P.LocalNotifications.getPending();
+    if(pend.notifications.length)await P.LocalNotifications.cancel({notifications:pend.notifications.map(x=>({id:x.id}))});
+    const [h,m]=hm(),now=new Date(),t=TODAY(),list=[];let id=1;
+    const wd=widgetData(sc).days;
+    for(let i=0;i<14;i++){const d=add(t,i),w=wd[d];if(!isWork(d)||!w.lines.length)continue;const when=at(d,h,m);if(when<=now)continue;
+      list.push({id:id++,title:`오늘 할일 ${w.lines.length}건`,body:w.lines.slice(0,4).join('\n'),schedule:{at:when,allowWhileIdle:true}})}
+    S.tasks.filter(x=>num(x.prog)<100).forEach(x=>{const e=empOf(x.emp),nm=e?e.name:'';
+      [[add(x.due,-1),'내일 마감'],[x.due,'오늘 마감']].forEach(([d,lab])=>{const when=at(d,h,m);if(when<=now)return;
+        list.push({id:id++,title:`${lab} · ${nm}`,body:x.title,schedule:{at:new Date(when.getTime()+60000),allowWhileIdle:true}})})});
+    if(list.length)await P.LocalNotifications.schedule({notifications:list.slice(0,60)});
+  }catch(e){}
+}
+let syncT;window.__lfSync=()=>{clearTimeout(syncT);syncT=setTimeout(syncNative,400)};
+if(NATIVE){
+  $('alarmRow').hidden=false;$('alarmTime').value=S.alarm||'09:00';
+  $('alarmTime').addEventListener('change',()=>{S.alarm=$('alarmTime').value||'09:00';save();toast('알림 시각 '+S.alarm)});
+  $('notiHelp').textContent='매일 정해진 시각에 오늘 할일 요약, 마감 하루 전·당일에 알림을 보냅니다. 앱이 꺼져 있어도 옵니다.';
+  notiState=async function(){try{const p=await P.LocalNotifications.checkPermissions();$('notiState').textContent=p.display==='granted'?'켜짐':'꺼짐';$('notiBtn').hidden=p.display==='granted'}catch(e){$('notiState').textContent='확인 불가'}};
+  const btn=$('notiBtn').cloneNode(true);$('notiBtn').replaceWith(btn);
+  btn.addEventListener('click',async()=>{try{await P.LocalNotifications.requestPermissions()}catch(e){}notiState();syncNative()});
+  (async()=>{try{const p=await P.LocalNotifications.checkPermissions();if(p.display==='prompt'||p.display==='prompt-with-rationale')await P.LocalNotifications.requestPermissions()}catch(e){}syncNative()})();
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();syncNative()}});
+}
+render();
+})();
+</script>
+</body></html>

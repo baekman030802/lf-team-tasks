@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">LF 팀 할일</string>
+    <string name="title_activity_main">LF 팀 할일</string>
+    <string name="package_name">com.libfriend.teamtasks</string>
+    <string name="custom_url_scheme">com.libfriend.teamtasks</string>
+    <string name="widget_desc">오늘 직원별 할일</string>
+</resources>
