@@ -2,34 +2,34 @@
 <title>LIBFRIEND 팀 할일</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
 /* Layout: phone-first single column, bottom tabs. Multi-day work appears on each of its days as "2/3일차", never as a long calendar bar. */
 :root{
-  --bg:#f1f3f6; --paper:#ffffff; --ink:#151b28; --muted:#5d6678; --line:#d9dee7; --soft:#e8ecf3;
-  --accent:#2a4fd6; --accent-soft:#e3e9fd; --on-accent:#ffffff;
-  --good:#1d7a4b; --good-bg:#ddf0e5; --warn:#9a5b00; --warn-bg:#f8ead3; --bad:#b3302b; --bad-bg:#f8dedc;
-  --e0:#2a4fd6; --e1:#c2410c; --e2:#0f766e; --e3:#9333ea; --e4:#b45309; --e5:#be185d;
-  --f-body:"IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
-  --f-num:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --bg:#f7f6fb; --paper:#ffffff; --ink:#2b2d3a; --muted:#6e7083; --line:#e7e5ef; --soft:#f1eff7;
+  --accent:#4f66c8; --accent-soft:#e6ebff; --on-accent:#2b3f99; --btn:#d9e1ff; --btn-ink:#2b3f99;
+  --mv2:#c4621a; --mv2-bg:#ffe8d6; --good:#2f8a5f; --good-bg:#dcf3e6; --warn:#a86414; --warn-bg:#fff0d6; --bad:#c44b4b; --bad-bg:#ffe1e1;
+  --e0:#8ea6f2; --e1:#f5a88a; --e2:#7cd0b6; --e3:#c0a4f0; --e4:#f2c76e; --e5:#f2a0c1;
+  --f-body:"Roboto","Noto Sans KR","Google Sans",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+  --f-num:"Roboto","Noto Sans KR",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0e121a; --paper:#161c27; --ink:#e4e8f0; --muted:#97a1b4; --line:#2a3242; --soft:#1e2532;
-  --accent:#7e9bff; --accent-soft:#1f2a4d; --on-accent:#0e121a;
-  --good:#6fd39b; --good-bg:#16302a; --warn:#eab063; --warn-bg:#3a2b14; --bad:#f28c86; --bad-bg:#3d1d1c;
-  --e0:#7e9bff; --e1:#fb8a5c; --e2:#4fd1c0; --e3:#c99bff; --e4:#f2b45a; --e5:#f47fb4; color-scheme:dark}}
+  --bg:#17161d; --paper:#211f29; --ink:#ebe9f2; --muted:#a3a1b3; --line:#34313f; --soft:#2a2834;
+  --accent:#aebcff; --accent-soft:#2c3256; --on-accent:#dfe5ff; --btn:#353d6b; --btn-ink:#dfe5ff;
+  --mv2:#ffb98a; --mv2-bg:#43301f; --good:#8fdcb3; --good-bg:#1f3a2e; --warn:#f3cc85; --warn-bg:#40331c; --bad:#ffa3a3; --bad-bg:#472527;
+  --e0:#a9bbf7; --e1:#f7b79e; --e2:#93dcc5; --e3:#cdb6f4; --e4:#f3d38d; --e5:#f5b4ce; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0e121a; --paper:#161c27; --ink:#e4e8f0; --muted:#97a1b4; --line:#2a3242; --soft:#1e2532;
-  --accent:#7e9bff; --accent-soft:#1f2a4d; --on-accent:#0e121a;
-  --good:#6fd39b; --good-bg:#16302a; --warn:#eab063; --warn-bg:#3a2b14; --bad:#f28c86; --bad-bg:#3d1d1c;
-  --e0:#7e9bff; --e1:#fb8a5c; --e2:#4fd1c0; --e3:#c99bff; --e4:#f2b45a; --e5:#f47fb4; color-scheme:dark}
+  --bg:#17161d; --paper:#211f29; --ink:#ebe9f2; --muted:#a3a1b3; --line:#34313f; --soft:#2a2834;
+  --accent:#aebcff; --accent-soft:#2c3256; --on-accent:#dfe5ff; --btn:#353d6b; --btn-ink:#dfe5ff;
+  --mv2:#ffb98a; --mv2-bg:#43301f; --good:#8fdcb3; --good-bg:#1f3a2e; --warn:#f3cc85; --warn-bg:#40331c; --bad:#ffa3a3; --bad-bg:#472527;
+  --e0:#a9bbf7; --e1:#f7b79e; --e2:#93dcc5; --e3:#cdb6f4; --e4:#f3d38d; --e5:#f5b4ce; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{background:var(--bg)}
 body{margin:0;color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
 .wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:14px 120px;display:flex;flex-direction:column;gap:14px}
 header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
-h1{margin:0;font-size:1.15rem;letter-spacing:-.01em}
+h1{margin:0;font-size:1.2rem;font-weight:500;letter-spacing:0}
 .date{font-family:var(--f-num);font-size:.8rem;color:var(--muted)}
 h2{margin:0;font-size:.75rem;font-weight:500;color:var(--muted);letter-spacing:.06em;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .view{display:flex;flex-direction:column;gap:14px}
@@ -77,9 +77,9 @@ table.wk{border-collapse:separate;border-spacing:4px;min-width:560px;width:100%}
 .wk td.off{background:transparent;border:1px dashed var(--line)}
 .wk td.over{box-shadow:inset 0 0 0 2px var(--bad)}
 .wk .h{font-family:var(--f-num);font-size:.75rem;font-weight:600}
-.wk .chip{display:block;font-size:.68rem;line-height:1.3;margin-top:3px;padding:2px 5px;border-radius:5px;background:var(--paper);border-left:3px solid var(--c);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;cursor:pointer}
-.wk .chip em{font-style:normal;font-family:var(--f-num);font-weight:600;color:var(--c)}
-.wk .chip.late{border-left-color:var(--bad)}
+.wk .chip{display:block;font-size:.68rem;line-height:1.3;margin-top:3px;padding:2px 5px;border-radius:5px;background:color-mix(in srgb,var(--c) 32%,var(--paper));color:var(--ink);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;cursor:pointer}
+.wk .chip em{font-style:normal;font-family:var(--f-num);font-weight:700;color:var(--ink);opacity:.65}
+.wk .chip.late{box-shadow:inset 0 0 0 1.5px var(--bad)}
 
 /* task list */
 .filters{display:flex;gap:6px;flex-wrap:wrap}
@@ -93,7 +93,7 @@ table.wk{border-collapse:separate;border-spacing:4px;min-width:560px;width:100%}
 .task .meta{font-size:.75rem;color:var(--muted);display:flex;gap:4px 12px;flex-wrap:wrap;align-items:center}
 .prog{display:flex;gap:4px;flex-wrap:wrap}
 .prog button{font:500 .72rem var(--f-num);padding:3px 8px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
-.prog button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.prog button[aria-pressed=true]{background:var(--btn);border-color:var(--btn);color:var(--btn-ink)}
 
 /* forms */
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -104,7 +104,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 textarea{min-height:64px;resize:vertical}
 .pair{display:flex;gap:6px}
 .pair input{flex:1;min-width:0}.pair select{width:auto}
-button{font:500 .85rem var(--f-body);border-radius:8px;padding:9px 14px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);cursor:pointer}
+button{font:500 .85rem var(--f-body);border-radius:8px;padding:9px 14px;border:1px solid var(--btn);background:var(--btn);color:var(--btn-ink);cursor:pointer}
 button.ghost{background:transparent;color:var(--accent)}
 button.plain{background:transparent;border-color:var(--line);color:var(--ink)}
 button.danger{background:transparent;border-color:var(--bad);color:var(--bad)}
@@ -124,8 +124,44 @@ button:focus-visible,.fbtn:focus-visible{outline:2px solid var(--ink);outline-of
 .sheet .panel{background:var(--paper);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px));display:grid;gap:12px}
 .sheet h3{margin:0;font-size:1rem}
 
+
+/* weekly report */
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.kpi{background:var(--soft);border-radius:10px;padding:10px 8px;display:grid;gap:2px;min-width:0}
+.kpi b{font:600 1.35rem/1.2 var(--f-num);font-variant-numeric:tabular-nums}
+.kpi span{font-size:.7rem;color:var(--muted)}
+.kpi.bad{background:var(--bad-bg)}.kpi.bad b{color:var(--bad)}.kpi.good{background:var(--good-bg)}.kpi.good b{color:var(--good)}.kpi.acc{background:var(--accent-soft)}.kpi.acc b{color:var(--accent)}
+.rp-sec{font-size:.72rem;font-weight:500;color:var(--muted);letter-spacing:.04em;padding-top:4px}
+.rp-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:7px 0;border-top:1px solid var(--line);align-items:center;cursor:pointer}
+.rp-row .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.rp-row .sub{grid-column:1/-1;font-size:.74rem;color:var(--muted);display:flex;gap:4px 10px;flex-wrap:wrap;align-items:center}
+.rp-row .tt{display:flex;gap:6px;align-items:center;min-width:0}
+.rp-row .st{font:600 .85rem var(--f-num);white-space:nowrap}
+.st.ok{color:var(--good)}.st.bad{color:var(--bad)}
+.mvb{flex:none;font-size:.66rem;font-weight:600;padding:1px 6px;border-radius:99px}.mvb.mv1{background:var(--soft);color:var(--muted)}.mvb.mv2{background:var(--mv2-bg);color:var(--mv2)}.mvb.mv3{background:var(--bad-bg);color:var(--bad)}
+.carry-btn{width:100%}
+.rp-row .pct{font:600 .9rem var(--f-num)}
+.mini{display:flex;height:6px;border-radius:99px;overflow:hidden;background:var(--soft)}
+.mini i{display:block;height:100%}
+.wk-nav button:disabled{opacity:.35;cursor:default}
+.tag.mv1{background:var(--soft);color:var(--muted)}.tag.mv2{background:var(--mv2-bg);color:var(--mv2)}.tag.mv3{background:var(--bad-bg);color:var(--bad);font-weight:600}
+.chk{display:flex!important;align-items:center;gap:10px;color:var(--ink)!important;font-size:.9rem!important;cursor:pointer}
+.chk[hidden]{display:none!important}
+.chk input{width:20px;height:20px;flex:none;accent-color:var(--accent)}
+.rchk{flex:none;font:500 .74rem var(--f-body);padding:4px 11px;border-radius:99px;background:transparent;border:1px solid var(--line);color:var(--muted)}
+.rchk.on{background:var(--good-bg);border-color:var(--good-bg);color:var(--good)}
+.wk .chip.skip{opacity:.45;background:transparent;box-shadow:inset 0 0 0 1px var(--line);text-decoration:line-through}
+.wk .chip.done{opacity:.5;text-decoration:line-through}
+.fld{display:grid;gap:6px}.flab{font-size:.8rem;color:var(--muted)}
+#fEmps button{display:inline-flex;gap:6px;align-items:center}
+.emp-row .mv{display:flex;gap:4px}.emp-row .mv button{padding:4px 8px;font-size:.7rem;line-height:1}.emp-row .mv button:disabled{opacity:.3;cursor:default}
+.task.hot{background:var(--bad-bg);border-radius:10px;padding:10px;border-top:0;margin:4px 0}
+.task.hot .pill.p-bad{background:var(--paper)}
+.sm{font-size:.74rem;padding:4px 10px;border-radius:6px}
+.carry-box{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px;border-radius:10px;background:var(--warn-bg);color:var(--warn);font-size:.82rem}
+.carry-box b{font-weight:600}.carry-box button{margin-left:auto}
 /* fab + tabs */
-.fab{position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:11;border-radius:99px;padding:13px 18px;font-weight:700;box-shadow:0 8px 20px -8px rgba(20,30,60,.5)}
+.fab{position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:11;border-radius:99px;padding:13px 18px;font-weight:700;box-shadow:0 6px 16px -6px rgba(70,80,140,.35)}
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--paper);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);display:flex;justify-content:center}
 nav.tabs div{display:flex;width:100%;max-width:640px}
 nav.tabs button{flex:1;border:0;border-radius:0;background:transparent;color:var(--muted);padding:13px 4px;font:500 .85rem var(--f-body)}
@@ -158,6 +194,10 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
       <div class="scroll"><table class="wk" id="wk"></table></div>
       <span class="hint">칩의 2/3은 3일짜리 일의 2일차라는 뜻입니다. 빨간 칩은 마감을 넘기는 일입니다.</span>
     </section>
+    <section class="card" id="wkOnCard" hidden>
+      <h2>상시 업무 <span id="wkOnCnt"></span></h2>
+      <div id="wkOn"></div>
+    </section>
   </div>
 
   <!-- 할일 -->
@@ -169,17 +209,27 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
     </section>
   </div>
 
+  <!-- 리포트 -->
+  <div class="view" id="v-report" hidden>
+    <section class="card">
+      <div class="wk-nav">
+        <button class="plain" id="rpPrev" aria-label="이전 주">‹</button>
+        <b id="rpLbl"></b>
+        <button class="plain" id="rpNext" aria-label="다음 주">›</button>
+      </div>
+      <div class="kpis" id="rpKpi"></div>
+      <div id="rpCarry"></div>
+    </section>
+    <div id="rpList" class="view"></div>
+    <div class="btns"><button class="plain sm" id="rpCopy">텍스트로 복사</button><span class="hint" id="rpNote"></span></div>
+  </div>
+
   <!-- 직원·설정 -->
   <div class="view" id="v-team" hidden>
     <section class="card">
       <h2>직원</h2>
       <div id="empList"></div>
       <div class="pair"><input id="newEmp" type="text" placeholder="직원 이름" autocomplete="off"><button id="addEmp">추가</button></div>
-    </section>
-    <section class="card">
-      <h2>근무 요일</h2>
-      <div class="days" id="workdays"></div>
-      <span class="hint">근무 요일만 작업일로 셉니다. 3일짜리 일이 금요일에 시작하면 금·토·월로 잡힙니다.</span>
     </section>
     <section class="card">
       <h2>알림</h2>
@@ -199,8 +249,9 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
 
 <nav class="tabs"><div role="tablist">
   <button role="tab" data-v="today" aria-selected="true">오늘</button>
-  <button role="tab" data-v="week" aria-selected="false">주간</button>
   <button role="tab" data-v="tasks" aria-selected="false">할일</button>
+  <button role="tab" data-v="week" aria-selected="false">주간</button>
+  <button role="tab" data-v="report" aria-selected="false">리포트</button>
   <button role="tab" data-v="team" aria-selected="false">직원</button>
 </div></nav>
 
@@ -209,18 +260,32 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
     <h3 id="shTitle">할일 추가</h3>
     <div class="grid">
       <label class="full">할일<input id="fTitle" type="text" autocomplete="off" placeholder="예: 북엔드 아마존 이미지 7장 교체"></label>
-      <label>담당 직원<select id="fEmp"></select></label>
-      <label>우선순위<select id="fPri"><option value="2">높음</option><option value="1" selected>보통</option><option value="0">낮음</option></select></label>
+      <div class="full fld"><span class="flab">담당 직원 <span class="hint">여러 명 선택 가능</span></span><div class="days" id="fEmps"></div></div>
+      <label class="full chk" id="lOn"><input id="fOngoing" type="checkbox">상시 업무 (마감 없이 계속하는 일)</label>
+      <label class="full chk" id="lDay"><input id="fDay" type="checkbox">당일 업무 (시작일 하루에 끝나는 일)</label>
       <label>시작일<input id="fStart" type="date"></label>
-      <label>데드라인<input id="fDue" type="date"></label>
-      <label class="full">예상 기간 (근무일)<div class="pair"><input id="fEst" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 3"><span class="hint" style="align-self:center">일</span></div></label>
+      <label id="lDue">데드라인<input id="fDue" type="date"></label>
+      <label class="full" id="lRep">반복<select id="fRep"></select></label>
+      <div class="days full" id="fRepDays" hidden></div>
+      <label class="full" id="lEst">예상 기간 (근무일)<div class="pair"><input id="fEst" type="text" inputmode="numeric" autocomplete="off" placeholder="비우면 당일 (1일)"><span class="hint" style="align-self:center">일</span></div></label>
       <span class="hint full" id="fPreview"></span>
+      <span class="hint full" id="fInfo"></span>
+      <label class="full">우선순위<select id="fPri"><option value="3">매우 중요</option><option value="2">높음</option><option value="1" selected>보통</option><option value="0">낮음</option></select></label>
       <label class="full">메모<textarea id="fNote" placeholder="필요한 자료, 참고 링크 등"></textarea></label>
     </div>
     <div class="btns">
       <button id="fSave">저장</button><button class="plain" id="fCancel">닫기</button>
       <button class="danger" id="fDel" style="margin-left:auto" hidden>삭제</button>
     </div>
+  </div>
+</div>
+<div class="sheet" id="occ" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="ocTitle">
+    <h3 id="ocTitle"></h3>
+    <span class="hint" id="ocInfo"></span>
+    <label>이번만 다른 날로 옮기기<input id="ocDate" type="date"></label>
+    <div class="btns"><button id="ocMove">이 날로 옮기기</button><button class="plain" id="ocSkip">이번만 건너뛰기</button></div>
+    <div class="btns"><button class="plain" id="ocReset" hidden>원래대로</button><button class="ghost" id="ocEdit">반복 설정 바꾸기 (매주 전체)</button><button class="plain" id="ocClose" style="margin-left:auto">닫기</button></div>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -244,12 +309,14 @@ const add=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return fmt(d)};
 const diff=(a,b)=>Math.round((parse(b)-parse(a))/864e5);
 const TODAY=()=>fmt(new Date());
 const md=s=>{const d=parse(s);return `${d.getMonth()+1}/${d.getDate()}(${DOW[d.getDay()]})`};
+const monOf=s=>add(s,-((parse(s).getDay()+6)%7));
 const dday=s=>{const n=diff(TODAY(),s);return n===0?'D-day':n>0?`D-${n}`:`D+${-n}`};
 
 // ---------- state ----------
 function sample(){
   const t=TODAY();
   const e=[{id:'e1',name:'예시 직원 A',c:0,ex:1},{id:'e2',name:'예시 직원 B',c:1,ex:1}];
+  const lw=diff(t,add(monOf(t),-7));
   const T=(id,emp,title,start,due,est,pri,prog)=>({id,emp,title,start:add(t,start),due:add(t,due),est,pri,prog,note:'',ex:1,created:Date.now()});
   return {emps:e,workdays:[1,2,3,4,5,6],tasks:[
     T('t1','e1','북엔드 아마존 리스팅 이미지 교체',-1,2,3,2,25),
@@ -257,7 +324,9 @@ function sample(){
     T('t3','e1','기관 견적서 3곳 발송',1,6,2,1,0),
     T('t4','e2','10월 자사몰 주문 포장·출고',0,0,1,2,50),
     T('t5','e2','인스타그램 릴스 2편 편집',0,4,2,1,0),
-    T('t6','e2','CHA에 BE 표기 문의 정리',2,3,1,0,0)
+    T('t6','e2','CHA에 BE 표기 문의 정리',2,3,1,0,0),
+    {...T('t7','e1','기관 카탈로그 PDF 수정',lw,lw+3,2,1,100),doneAt:add(t,lw+2)},
+    {...T('t8','e2','9월 출고분 송장 정리',lw+1,lw+2,1,1,100),doneAt:add(t,lw+4)}
   ],notified:{}};
 }
 function migrate(){const o=store.get('lf_team_tasks_v1',null);if(!o)return null;
@@ -268,6 +337,24 @@ const save=()=>{store.set(K,S);if(window.__lfSync)window.__lfSync()};
 const empOf=id=>S.emps.find(e=>e.id===id);
 const colorOf=e=>`var(--e${(e?e.c:0)%6})`;
 const isWork=s=>S.workdays.includes(parse(s).getDay());
+const NODUE='9999-12-31'; // 상시 업무는 마감 없음
+// ---------- 반복 업무 ----------
+function repLabel(r,start){if(!r)return '';const x=parse(start);
+  return r.type==='daily'?'매일':r.type==='weekly'?`매주 ${DOW[x.getDay()]}요일`:r.type==='weekdays'?'주중 매일(월-금)':r.type==='monthly'?`매월 ${x.getDate()}일`:'매주 '+[1,2,3,4,5,6,0].filter(d=>(r.days||[]).includes(d)).map(d=>DOW[d]).join('·')}
+function occurs(t,d){const r=t.rep;if(!r||d<t.start)return false;const x=parse(d),w=x.getDay();
+  return r.type==='daily'?isWork(d):r.type==='weekly'?w===parse(t.start).getDay():r.type==='weekdays'?(w>=1&&w<=5):r.type==='monthly'?x.getDate()===parse(t.start).getDate():(r.days||[]).includes(w)}
+// 이번만 옮기기: t.rmove{원래날짜:새날짜}, 이번만 건너뛰기: t.rskip{원래날짜:1}
+function occOn(t,d){if(!t.rep)return false;const mv=t.rmove||{};if(Object.keys(mv).some(k=>mv[k]===d))return true;return occurs(t,d)&&!(d in mv)&&!(t.rskip||{})[d]}
+const isSkip=(t,d)=>occurs(t,d)&&!!(t.rskip||{})[d];
+function origOf(t,d){const mv=t.rmove||{};return Object.keys(mv).find(k=>mv[k]===d)||d}
+const repDone=(t,d)=>!!(t.rdone&&t.rdone[d]);
+function toggleRep(id,d){const t=S.tasks.find(x=>x.id===id);if(!t)return;t.rdone=t.rdone||{};if(t.rdone[d])delete t.rdone[d];else t.rdone[d]=1;save();render()}
+function repCount(t,ws,we,until){let n=0,ok=0;for(let d=ws;d<=we&&d<=until;d=add(d,1)){if(occOn(t,d)){n++;if(repDone(t,d))ok++}}return [ok,n]}
+// 담당자: t.emp(대표 1명) + t.co(함께하는 직원들)
+const members=t=>[t.emp,...(t.co||[])];
+const has=(t,id)=>members(t).includes(id);
+const who=t=>members(t).map(empOf).filter(Boolean).map(e=>e.name).join(', ');
+const withOthers=(t,id)=>{const o=members(t).filter(x=>x!==id).map(empOf).filter(Boolean).map(e=>e.name);return o.length?`함께: ${o.join(', ')}`:''};
 const estD=t=>Math.max(1,Math.round(num(t.est)));
 
 // ---------- scheduler: each task takes its first N workdays from its start date ----------
@@ -276,12 +363,13 @@ function schedule(){
   const out={byTask:{},byDay:{}};
   S.emps.forEach(e=>out.byDay[e.id]={});
   S.tasks.forEach(t=>{
+    if(t.ongoing||t.rep){out.byTask[t.id]={days:[],finish:NODUE,late:false};return}
     const n=estD(t),days=[];let d=t.start,g=0;
     while(days.length<n&&g++<400){if(isWork(d))days.push(d);d=add(d,1)}
     const finish=days[days.length-1]||t.start;
     out.byTask[t.id]={days,finish,late:finish>t.due};
-    if(num(t.prog)>=100||!out.byDay[t.emp])return;
-    days.forEach(x=>(out.byDay[t.emp][x]=out.byDay[t.emp][x]||[]).push(t.id));
+    if(num(t.prog)>=100)return;
+    members(t).forEach(eid=>{if(out.byDay[eid])days.forEach(x=>(out.byDay[eid][x]=out.byDay[eid][x]||[]).push(t.id))});
   });
   return out;
 }
@@ -304,19 +392,23 @@ function renderToday(sc){
     else if(info.late)al.push(['p-warn',`마감 넘길 위험 · 예상 끝 ${md(info.finish)}`,x,e]);
     else if(n===1)al.push(['p-warn','내일 마감',x,e]);
   });
-  $('alerts').innerHTML=al.map(a=>`<div class="alert ${a[0]}" data-edit="${a[2].id}" style="cursor:pointer"><b>${a[1]}</b><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a[2].title)} · ${esc(a[3]?a[3].name:'')}</span></div>`).join('');
+  $('alerts').innerHTML=al.map(a=>`<div class="alert ${a[0]}" data-edit="${a[2].id}" style="cursor:pointer"><b>${a[1]}</b><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a[2].title)} · ${esc(who(a[2]))}</span></div>`).join('');
   // per employee: tasks whose days include today, plus unfinished ones whose planned days already ended
   $('todayList').innerHTML=S.emps.length?S.emps.map(e=>{
     const c=colorOf(e);
     const ids=((sc.byDay[e.id]||{})[t]||[]).slice();
-    S.tasks.filter(x=>x.emp===e.id&&num(x.prog)<100&&sc.byTask[x.id].finish<t).forEach(x=>ids.push(x.id));
+    S.tasks.filter(x=>has(x,e.id)&&num(x.prog)<100&&sc.byTask[x.id].finish<t).forEach(x=>ids.push(x.id));
     const rows=ids.map(id=>{
       const k=S.tasks.find(x=>x.id===id), info=sc.byTask[id], idx=info.days.indexOf(t), n=info.days.length, over=idx<0;
       const step=over?'<span class="daystep" style="background:var(--bad-bg);color:var(--bad)">기간 초과</span>':n>1?`<span class="daystep">${idx+1}/${n}일차</span>`:'<span class="daystep">하루</span>';
       return `<div class="slice" data-edit="${id}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span>${step}
-        <span class="sub">${over?'':stepsHTML(info.days,idx,c)}<span>마감 ${md(k.due)} · ${dday(k.due)}</span><span>진행 ${num(k.prog)}%</span>${info.late&&!over?'<span class="pill p-warn">마감 위험</span>':''}${k.ex?'<span class="tag">예시</span>':''}</span></div>`}).join('');
-    return `<section class="card" style="--c:${c}"><div class="emp-head"><span class="dot"></span><b>${esc(e.name)}</b><span class="load">오늘 ${ids.length}건</span></div>
-      ${rows||'<div class="empty">오늘 할 일이 없습니다</div>'}</section>`}).join('')
+        <span class="sub">${over?'':stepsHTML(info.days,idx,c)}<span>마감 ${md(k.due)} · ${dday(k.due)}</span><span>진행 ${num(k.prog)}%</span>${withOthers(k,e.id)?`<span>${esc(withOthers(k,e.id))}</span>`:''}${info.late&&!over?'<span class="pill p-warn">마감 위험</span>':''}${k.ex?'<span class="tag">예시</span>':''}</span></div>`}).join('');
+    const on=[]; // 상시 업무는 주간·리포트에서만 보임
+    const rp=S.tasks.filter(x=>x.rep&&has(x,e.id)&&occOn(x,t));
+    const rRows=rp.map(k=>{const dn=repDone(k,t);return `<div class="slice" data-occ="${k.id}|${t}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span><button class="rchk ${dn?'on':''}" data-rdone="${k.id}">${dn?'✓ 완료':'체크'}</button><span class="sub"><span>↻ ${repLabel(k.rep,k.start)}${origOf(k,t)!==t?` · 이번만 옮김 (원래 ${md(origOf(k,t))})`:''}</span></span></div>`}).join('');
+    const oRows=on.map(k=>`<div class="slice" data-edit="${k.id}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span><span class="daystep" style="background:var(--soft);color:var(--muted)">상시</span><span class="sub"><span>진행 ${num(k.prog)}%</span></span></div>`).join('');
+    return `<section class="card" style="--c:${c}"><div class="emp-head"><span class="dot"></span><b>${esc(e.name)}</b><span class="load">오늘 ${ids.length}건${rp.length?` · 반복 ${rp.length}`:''}${on.length?` · 상시 ${on.length}`:''}</span></div>
+      ${rows||(on.length||rp.length?'':'<div class="empty">오늘 할 일이 없습니다</div>')}${rp.length?`<div class="rp-sec">반복 업무</div><div>${rRows}</div>`:''}${on.length?`<div class="rp-sec">상시 업무</div><div>${oRows}</div>`:''}</section>`}).join('')
   :'<section class="card"><div class="empty">직원 탭에서 직원을 먼저 추가하세요.</div></section>';
 }
 
@@ -335,37 +427,174 @@ function renderWeek(sc){
       const sl=(sc.byDay[e.id]||{})[d]||[];
       if(!isWork(d)){h+='<td class="off"></td>';return}
       h+=`<td>${sl.map(id=>{const k=S.tasks.find(x=>x.id===id),info=sc.byTask[id],i=info.days.indexOf(d),n=info.days.length;
-        return `<span class="chip ${info.late?'late':''}" style="--c:${c}" data-edit="${id}" title="${esc(k.title)}">${n>1?`<em>${i+1}/${n}</em> `:''}${esc(k.title)}</span>`}).join('')}</td>`;
+        return `<span class="chip ${info.late?'late':''}" style="--c:${c}" data-edit="${id}" title="${esc(k.title)}">${n>1?`<em>${i+1}/${n}</em> `:''}${esc(k.title)}</span>`}).join('')}${S.tasks.filter(k=>k.rep&&has(k,e.id)&&(occOn(k,d)||isSkip(k,d))).map(k=>`<span class="chip ${isSkip(k,d)?'skip':repDone(k,d)?'done':''}" style="--c:${c}" data-occ="${k.id}|${d}" title="${esc(k.title)}"><em>↻</em> ${esc(k.title)}</span>`).join('')}</td>`;
     });
     h+='</tr>';
   });
   $('wk').innerHTML=h;
+  const ord=id=>S.emps.findIndex(e=>e.id===id);
+  const on=S.tasks.filter(x=>x.ongoing&&num(x.prog)<100&&empOf(x.emp)).sort((a,b)=>ord(a.emp)-ord(b.emp));
+  $('wkOnCard').hidden=!on.length;$('wkOnCnt').textContent=on.length+'개';
+  $('wkOn').innerHTML=on.map(x=>`<div class="task"><div class="row1"><span class="dot" style="--c:${colorOf(empOf(x.emp))}"></span><span class="t" data-edit="${x.id}">${esc(x.title)}</span></div><div class="meta"><span>${esc(who(x))}</span>${x.start>TODAY()?`<span>${md(x.start)}부터</span>`:''}</div>${progUI(x)}</div>`).join('');
 }
 
 // ---------- 할일 ----------
 let filt='all';
+const sameDay=t=>!t.rep&&!t.ongoing&&t.due===t.start&&estD(t)===1;
+function nextOcc(t){let d=TODAY();for(let i=0;i<120;i++,d=add(d,1))if(occOn(t,d))return d;return null}
+function progUI(t){
+  if(t.rep){const td=TODAY();if(occOn(t,td)){const dn=repDone(t,td);return `<div class="prog"><button data-rdone="${t.id}" aria-pressed="${dn}">${dn?'✓ 오늘 완료':'오늘 완료'}</button></div>`}
+    const n=nextOcc(t);return `<div class="prog"><span class="hint">오늘은 없음${n?` · 다음 ${md(n)}`:''}</span></div>`}
+  if(sameDay(t)){const dn=num(t.prog)>=100;return `<div class="prog"><button data-prog="${t.id}" data-p="${dn?0:100}" aria-pressed="${dn}">${dn?'✓ 완료':'완료'}</button></div>`}
+  return `<div class="prog" role="group" aria-label="진행률">${[0,25,50,75,100].map(p=>`<button data-prog="${t.id}" data-p="${p}" aria-pressed="${num(t.prog)===p}">${p===100?'완료':p+'%'}</button>`).join('')}</div>`}
+// 매우 중요(pri 3)이고 마감 하루 전부터는 할일 목록 맨 위
+const hot=t=>+(t.pri===3&&!t.rep&&!t.ongoing&&num(t.prog)<100&&diff(TODAY(),t.due)<=1);
 function renderTasks(sc){
   $('filters').innerHTML=[['all','전체',null],...S.emps.map(e=>[e.id,e.name,e]),['done','완료',null]].map(([id,n,e])=>`<button class="fbtn" data-f="${id}" aria-pressed="${filt===id}">${e?`<span class="dot" style="--c:${colorOf(e)}"></span>`:''}${esc(n)}</button>`).join('');
-  const list=S.tasks.filter(t=>filt==='done'?num(t.prog)>=100:(num(t.prog)<100&&(filt==='all'||t.emp===filt)))
-    .sort((a,b)=>a.due.localeCompare(b.due)||b.pri-a.pri);
+  const list=S.tasks.filter(t=>!t.ongoing).filter(t=>filt==='done'?num(t.prog)>=100:(num(t.prog)<100&&(filt==='all'||has(t,filt))))
+    .sort((a,b)=>hot(b)-hot(a)||a.due.localeCompare(b.due)||b.pri-a.pri);
   $('taskCnt').textContent=list.length+'개';
   $('taskList').innerHTML=list.length?list.map(t=>{
     const e=empOf(t.emp),info=sc.byTask[t.id]||{days:[]},n=info.days.length,dn=diff(TODAY(),t.due);
     const span=n?(n>1?`${md(info.days[0])} → ${md(info.finish)}`:`${md(info.days[0])} 하루`):'';
     const st=num(t.prog)>=100?'<span class="pill p-good">완료</span>':dn<0?'<span class="pill p-bad">마감 지남</span>':info.late?'<span class="pill p-warn">마감 위험</span>':dn<=1?'<span class="pill p-warn">'+dday(t.due)+'</span>':'';
-    return `<div class="task ${num(t.prog)>=100?'done':''}">
+    return `<div class="task ${num(t.prog)>=100?'done':''} ${hot(t)?'hot':''}">
       <div class="row1"><span class="dot" style="--c:${colorOf(e)}"></span><span class="t" data-edit="${t.id}">${esc(t.title)}</span>${st}</div>
-      <div class="meta"><span>${esc(e?e.name:'담당 없음')}</span><span>마감 ${md(t.due)} ${dday(t.due)}</span><span>예상 ${estD(t)}일</span>${span?`<span>${span}</span>`:''}${['낮음','','높음'][t.pri]?`<span class="tag">${['낮음','','높음'][t.pri]}</span>`:''}${t.ex?'<span class="tag">예시</span>':''}</div>
-      <div class="prog" role="group" aria-label="진행률">${[0,25,50,75,100].map(p=>`<button data-prog="${t.id}" data-p="${p}" aria-pressed="${num(t.prog)===p}">${p===100?'완료':p+'%'}</button>`).join('')}</div>
+      <div class="meta"><span>${esc(who(t)||'담당 없음')}</span>${t.rep?`<span class="tag">↻ ${repLabel(t.rep,t.start)}</span>`:t.ongoing?'<span class="tag">상시 업무</span>':`<span>마감 ${md(t.due)} ${dday(t.due)}</span><span>예상 ${estD(t)}일</span>`}${span?`<span>${span}</span>`:''}${t.pri===3?'<span class="pill p-bad">매우 중요</span>':['낮음','','높음'][t.pri]?`<span class="tag">${['낮음','','높음'][t.pri]}</span>`:''}${t.ex?'<span class="tag">예시</span>':''}${movedTag(t)}</div>
+      ${progUI(t)}
     </div>`}).join(''):'<div class="empty">할일이 없습니다. 오른쪽 아래 + 할일로 추가하세요.</div>';
 }
 
 // ---------- 직원·설정 ----------
 function renderTeam(){
-  $('empList').innerHTML=S.emps.length?S.emps.map(e=>`<div class="emp-row"><span class="dot" style="--c:${colorOf(e)}"></span><span class="n">${esc(e.name)}${e.ex?' <span class="tag">예시</span>':''}</span><span class="hint">${S.tasks.filter(t=>t.emp===e.id&&num(t.prog)<100).length}건 진행 중</span><button class="ghost" data-delemp="${e.id}">삭제</button></div>`).join(''):'<div class="empty">아직 직원이 없습니다</div>';
-  $('workdays').innerHTML=[1,2,3,4,5,6,0].map(d=>`<button data-wd="${d}" aria-pressed="${S.workdays.includes(d)}">${DOW[d]}</button>`).join('');
+  $('empList').innerHTML=S.emps.length?S.emps.map((e,i)=>`<div class="emp-row"><span class="mv"><button class="plain" data-up="${i}" aria-label="위로" ${i===0?'disabled':''}>▲</button><button class="plain" data-down="${i}" aria-label="아래로" ${i===S.emps.length-1?'disabled':''}>▼</button></span><span class="dot" style="--c:${colorOf(e)}"></span><span class="n">${esc(e.name)}${e.ex?' <span class="tag">예시</span>':''}</span><span class="hint">${S.tasks.filter(t=>has(t,e.id)&&num(t.prog)<100).length}건 진행 중</span><button class="ghost" data-delemp="${e.id}">삭제</button></div>`).join(''):'<div class="empty">아직 직원이 없습니다</div>';
+  // 근무 요일 설정 화면은 없앰 (저장된 근무 요일은 그대로 사용)
   notiState();
 }
+
+// ---------- 주간 리포트 (지난주 월~일) ----------
+// 완료 = 그 주에 '완료'를 누른 일(doneAt). 진행 중 = 그 주 안에 시작했고 주말까지 완료 안 된 일.
+function setProg(t,p){
+  const d=TODAY();t.prog=p;t.hist=t.hist||[];
+  const l=t.hist[t.hist.length-1];if(l&&l[0]===d)l[1]=p;else t.hist.push([d,p]);
+  if(p>=100){if(!t.doneAt)t.doneAt=d}else delete t.doneAt;
+}
+function progAt(t,d){
+  if(t.doneAt&&t.doneAt<=d)return 100;
+  if(!t.hist||!t.hist.length)return num(t.prog);
+  let p=0;t.hist.forEach(([x,v])=>{if(x<=d)p=v});return Math.min(p,99);
+}
+function gain(t,ws,we){return t.hist&&t.hist.length?progAt(t,we)-progAt(t,add(ws,-1)):null}
+function weekData(ws,we,asPast){
+  const past=asPast||we<TODAY(),ref=past?add(we,1):TODAY();
+  const emps=S.emps.map(e=>{
+    const mine=S.tasks.filter(t=>has(t,e.id));
+    const done=mine.filter(t=>t.doneAt&&t.doneAt>=ws&&t.doneAt<=we).sort((a,b)=>a.doneAt.localeCompare(b.doneAt));
+    const reps=mine.filter(t=>t.rep&&t.start<=we);
+    const ong=mine.filter(t=>t.ongoing&&t.start<=we&&!(t.doneAt&&t.doneAt<=we));
+    const open=mine.filter(t=>!t.ongoing&&!t.rep&&(t.origStart||t.start)<=we&&(t.doneAt?t.doneAt>we:num(t.prog)<100)).sort((a,b)=>a.due.localeCompare(b.due));
+    return {e,done,open,ong,reps,late:open.filter(t=>dueOf(t)<ref)};
+  });
+  const uniq=a=>[...new Map(a.map(t=>[t.id,t])).values()],sum=k=>uniq(emps.flatMap(x=>x[k])).length,all=uniq(emps.flatMap(x=>x.done)),ok=all.filter(t=>t.doneAt<=dueOf(t)).length;
+  return {ws,we,past,ref,emps,nDone:sum('done'),nOpen:sum('open'),nLate:sum('late'),rate:all.length?Math.round(ok/all.length*100):null};
+}
+let rpOff=-1;
+const rpRange=()=>{const ws=add(monOf(TODAY()),7*rpOff);return [ws,add(ws,6)]};
+function renderReport(sc){
+  sc=sc||schedule();
+  const [ws,we]=rpRange(),R=weekData(ws,we),at=R.past?we:TODAY();
+  const cl=carryList(ws,we,sc),tgt=carryTarget(we),where=tgt<=TODAY()?'이번 주로':'다음 주로';
+  const capped=carryList(ws,we,sc,true).length-cl.length;
+  $('rpLbl').textContent=`${md(ws)} – ${md(we)}`+(rpOff===0?' · 이번 주':rpOff===-1?' · 지난주':'');
+  $('rpNext').disabled=rpOff>=0;
+  $('rpKpi').innerHTML=[['완료',R.nDone,'good'],['진행 중',R.nOpen,'acc'],['마감 지남',R.nLate,R.nLate?'bad':'']]
+    .map(([l,v,c])=>`<div class="kpi ${c}"><b>${v}</b><span>${l}</span></div>`).join('');
+  $('rpCarry').innerHTML=(cl.length?`<button class="carry-btn" data-carryall>못 끝낸 일 ${cl.length}건 ${where} 넘기기</button>`:'')
+    +(capped?`<div class="hint" style="color:var(--bad);margin-top:6px">${capped}건은 3번 넘겨서 더 못 넘깁니다. 눌러서 날짜를 직접 정해주세요.</div>`:'');
+  const legacy=S.tasks.filter(t=>num(t.prog)>=100&&!t.doneAt).length;
+  $('rpNote').textContent=legacy?`완료일 기록 전에 끝난 ${legacy}건은 빠짐`:'';
+  const title=t=>`<span class="tt"><span class="t">${esc(t.title)}</span>${t.co&&t.co.length?'<span class="tag">함께</span>':''}${t.moves?`<span class="mvb mv${Math.min(t.moves,3)}">${t.moves}번 밀림</span>`:''}</span>`;
+  $('rpList').innerHTML=R.emps.length?R.emps.map(({e,done,open,ong,reps})=>{
+    const until=R.past?we:TODAY(),rr=reps.map(t=>[t,...repCount(t,ws,we,until)]).filter(x=>x[2]>0);
+    const dRows=done.map(t=>{const late=t.doneAt>dueOf(t);
+      return `<div class="rp-row" data-edit="${t.id}">${title(t)}<span class="st ${late?'bad':'ok'}">${late?'늦게 완료':'✓ 완료'}</span></div>`}).join('');
+    const oRows=open.map(t=>{const late=dueOf(t)<R.ref;
+      return `<div class="rp-row" data-edit="${t.id}">${title(t)}<span class="st ${late?'bad':''}">${late?'지남':progAt(t,at)+'%'}</span></div>`}).join('');
+    return `<section class="card" style="--c:${colorOf(e)}">
+      <div class="emp-head"><span class="dot"></span><b>${esc(e.name)}</b><span class="load">완료 ${done.length} · 진행 ${open.length}</span></div>
+      ${done.length?`<div class="rp-sec">완료</div><div>${dRows}</div>`:''}
+      ${open.length?`<div class="rp-sec">진행 중</div><div>${oRows}</div>`:''}
+      ${rr.length?`<div class="rp-sec">반복 업무</div><div>${rr.map(([t,ok,n])=>`<div class="rp-row" data-edit="${t.id}">${title(t)}<span class="st ${ok===n?'ok':R.past?'bad':''}">${ok}/${n}회</span></div>`).join('')}</div>`:''}
+      ${ong.length?`<div class="rp-sec">상시 업무</div><div>${ong.map(t=>{const g=gain(t,ws,we);return `<div class="rp-row" data-edit="${t.id}">${title(t)}<span class="st ${g>0?'ok':''}">${g>0?`+${g}%p`:'그대로'}</span></div>`}).join('')}</div>`:''}
+      ${done.length+open.length+ong.length+rr.length?'':'<div class="empty">기록 없음</div>'}
+    </section>`}).join(''):'<section class="card"><div class="empty">직원 탭에서 직원을 먼저 추가하세요.</div></section>';
+}
+function rpText(){
+  const [ws,we]=rpRange(),R=weekData(ws,we),at=R.past?we:TODAY(),L=[];
+  L.push(`LIBFRIEND 주간 리포트 ${md(ws)}~${md(we)}`);
+  L.push(`완료 ${R.nDone}건 · 진행 중 ${R.nOpen}건 · 마감 지남 ${R.nLate}건`+(R.rate==null?'':` · 마감 준수 ${R.rate}%`));
+  R.emps.forEach(({e,done,open,ong,reps})=>{
+    L.push('',`[${e.name}] 완료 ${done.length} · 진행 중 ${open.length}`);
+    done.forEach(t=>{const lb=diff(dueOf(t),t.doneAt);L.push(`  ✓ ${t.title} (${md(t.doneAt)} 완료${lb>0?`, ${lb}일 늦음`:''})`)});
+    reps.forEach(t=>{const [ok,n]=repCount(t,ws,we,R.past?we:TODAY());if(n)L.push(`  ↻ ${t.title} ${ok}/${n}회`)});
+    ong.forEach(t=>{const g=gain(t,ws,we);L.push(`  · [상시] ${t.title} ${progAt(t,at)}%${g>0?` (+${g}%p)`:' (그대로)'}`)});
+    open.forEach(t=>L.push(`  - ${t.title} ${progAt(t,at)}% (마감 ${md(t.due)}${dueOf(t)<R.ref?', 마감 지남':''}${t.moves?`, 넘김 ${t.moves}회`:''})`));
+  });
+  return L.join('\n');
+}
+$('rpPrev').addEventListener('click',()=>{rpOff--;render()});
+$('rpNext').addEventListener('click',()=>{if(rpOff<0){rpOff++;render()}});
+$('rpCopy').addEventListener('click',()=>{const txt=rpText();
+  const fb=()=>{const a=document.createElement('textarea');a.value=txt;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('복사했습니다')}catch(e){toast('복사 실패')}a.remove()};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(()=>toast('복사했습니다'),fb);else fb();
+});
+// 월요일엔 '오늘' 탭 맨 위에 지난주 리포트 바로가기
+function mondayBanner(){
+  const t=TODAY();if(parse(t).getDay()!==1||!$('alerts'))return;
+  const R=weekData(add(t,-7),add(t,-1)),nc=carryList(add(t,-7),add(t,-1),schedule()).length;
+  $('alerts').insertAdjacentHTML('afterbegin',`<div class="alert p-acc" data-goreport style="cursor:pointer"><b style="white-space:nowrap">지난주 리포트</b><span>완료 ${R.nDone}건 · 진행 중 ${R.nOpen}건${R.nLate?` · 마감 지남 ${R.nLate}건`:''}${nc?` · 못 끝낸 일 ${nc}건 넘기기`:''} → 보기</span></div>`);
+}
+
+// ---------- 못 끝낸 일 넘기기 ----------
+// 넘기면: 시작일 = 다음 주 월요일(이미 지났으면 오늘), 예상 기간 = 남은 만큼(진행률 반영, 최소 1일),
+// 데드라인이 새 일정보다 빠르면 새 끝나는 날로 늦춤. 원래 마감(origDue)은 보관 → 리포트의 '마감 지남/준수'는 원래 마감 기준.
+const dueOf=t=>t.origDue||t.due;
+const MAXMOVE=3;
+// 넘김 1회 회색, 2회 주황, 3회 빨강
+const movedTag=t=>t.moves?`<span class="tag mv${Math.min(t.moves,3)}">넘김 ${t.moves}회${t.moves>=MAXMOVE?' (최대)':''}${t.origDue&&t.origDue!==t.due?` · 원래 마감 ${md(t.origDue)}`:''}</span>`:'';
+function carryTarget(we){const m=add(we,1),t=TODAY();return m>t?m:t}
+function carryList(ws,we,sc,all){return S.tasks.filter(t=>(all||(t.moves||0)<MAXMOVE)&&num(t.prog)<100&&empOf(t.emp)&&t.start<=we&&sc.byTask[t.id]&&sc.byTask[t.id].finish<=we)}
+function carry(t,start){
+  if(!t.origDue)t.origDue=t.due;if(!t.origEst)t.origEst=estD(t);if(!t.origStart)t.origStart=t.start;
+  t.moves=(t.moves||0)+1;
+  const left=Math.max(1,Math.ceil(estD(t)*(100-num(t.prog))/100));
+  const days=[];let x=start,g=0;while(days.length<left&&g++<400){if(isWork(x))days.push(x);x=add(x,1)}
+  const end=days[days.length-1]||start;
+  t.start=start;t.est=left;if(t.due<end)t.due=end;
+}
+function doCarry(ids){const [,we]=rpRange(),st=carryTarget(we);
+  ids.forEach(id=>{const t=S.tasks.find(x=>x.id===id);if(t)carry(t,st)});
+  save();render();toast(`${ids.length}건을 ${md(st)}부터로 넘겼습니다`);
+}
+
+// ---------- 반복 업무: 이번만 바꾸기 ----------
+let ocT=null,ocD=null;
+function openOcc(id,d){const t=S.tasks.find(x=>x.id===id);if(!t)return;ocT=t;ocD=d;const o=origOf(t,d),moved=o!==d,sk=isSkip(t,d);
+  $('ocTitle').textContent=t.title;
+  $('ocInfo').textContent=`↻ ${repLabel(t.rep,t.start)} · ${md(o)} 차례`+(moved?` → 이번만 ${md(d)}로 옮김`:'')+(sk?' → 이번만 건너뜀':'')+'. 여기서 바꾸면 이번 한 번만 바뀌고 다음 주는 그대로입니다.';
+  $('ocDate').value=d;$('ocReset').hidden=!(moved||sk);$('ocSkip').hidden=sk;$('occ').hidden=false}
+function closeOcc(){$('occ').hidden=true;ocT=null}
+$('ocClose').addEventListener('click',closeOcc);
+$('occ').addEventListener('click',e=>{if(e.target===$('occ'))closeOcc()});
+$('ocMove').addEventListener('click',()=>{const t=ocT,nd=$('ocDate').value;if(!t||!nd)return;const o=origOf(t,ocD);
+  t.rmove=t.rmove||{};t.rskip=t.rskip||{};delete t.rskip[o];if(nd===o)delete t.rmove[o];else t.rmove[o]=nd;
+  if(t.rdone&&t.rdone[ocD]&&ocD!==nd){delete t.rdone[ocD];t.rdone[nd]=1}
+  save();closeOcc();render();toast(`이번만 ${md(nd)}로 옮겼습니다`)});
+$('ocSkip').addEventListener('click',()=>{const t=ocT;if(!t)return;const o=origOf(t,ocD);t.rskip=t.rskip||{};t.rskip[o]=1;if(t.rmove)delete t.rmove[o];if(t.rdone)delete t.rdone[ocD];
+  save();closeOcc();render();toast(`${md(o)}은 이번만 건너뜁니다`)});
+$('ocReset').addEventListener('click',()=>{const t=ocT;if(!t)return;const o=origOf(t,ocD);if(t.rmove)delete t.rmove[o];if(t.rskip)delete t.rskip[o];
+  save();closeOcc();render();toast('원래 일정으로 돌렸습니다')});
+$('ocEdit').addEventListener('click',()=>{const id=ocT&&ocT.id;closeOcc();if(id)openSheet(id)});
 
 // ---------- render all ----------
 let cur='today';
@@ -375,13 +604,15 @@ function render(){
   if(cur==='week')renderWeek(sc);
   if(cur==='tasks')renderTasks(sc);
   if(cur==='team')renderTeam();
+  if(cur==='report')renderReport(sc);
+  mondayBanner();
   checkNotify(sc);
 }
 function show(v){
   cur=v;
   document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===v));
-  ['today','week','tasks','team'].forEach(x=>$('v-'+x).hidden=x!==v);
-  $('fab').hidden=v==='team';
+  ['today','week','tasks','report','team'].forEach(x=>$('v-'+x).hidden=x!==v);
+  $('fab').hidden=v==='team'||v==='report';
   render();window.scrollTo({top:0});
 }
 document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>show(b.dataset.v)));
@@ -392,35 +623,64 @@ function openSheet(id){
   if(!S.emps.length){toast('먼저 직원을 추가하세요');show('team');return}
   editId=id||null;const t=id?S.tasks.find(x=>x.id===id):null,today=TODAY();
   $('shTitle').textContent=t?'할일 수정':'할일 추가';
-  $('fEmp').innerHTML=S.emps.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
   $('fTitle').value=t?t.title:'';
-  $('fEmp').value=t?t.emp:(filt!=='all'&&filt!=='done'&&empOf(filt)?filt:S.emps[0].id);
+  selEmps=t?members(t).filter(empOf):[filt!=='all'&&filt!=='done'&&empOf(filt)?filt:S.emps[0].id];empChips();
   $('fPri').value=t?String(t.pri):'1';
   $('fStart').value=t?t.start:today;
-  $('fDue').value=t?t.due:add(today,3);
+  $('fDue').value=t&&!t.ongoing?t.due:add(today,3);
+  $('fOngoing').checked=!!(t&&t.ongoing);
+  $('fDay').checked=!!(t&&!t.ongoing&&!t.rep&&t.due===t.start);
+  repDays=t&&t.rep&&t.rep.days&&t.rep.days.length?t.rep.days.slice():[parse(t?t.start:today).getDay()];
+  $('fRep').value='none';repOptions();$('fRep').value=t&&t.rep?t.rep.type:'none';ongoingUI();
   $('fEst').value=t?t.est:'';
   $('fNote').value=t?t.note:'';
+  $('fInfo').textContent=t?[t.doneAt?`${md(t.doneAt)} 완료`:'',t.moves?`${t.moves}번 넘김 (최대 ${MAXMOVE}번)`:'',t.origDue&&t.origDue!==t.due?`원래 마감 ${md(t.origDue)}`:''].filter(Boolean).join(' · '):'';
   $('fDel').hidden=!t;delete $('fDel').dataset.arm;$('fDel').textContent='삭제';
   $('sheet').hidden=false;preview();setTimeout(()=>$('fTitle').focus(),50);
 }
 function closeSheet(){$('sheet').hidden=true;editId=null}
+let repDays=[];
+function repOptions(){const s=$('fStart').value||TODAY(),x=parse(s),cur=$('fRep').value||'none';
+  $('fRep').innerHTML=[['none','반복 안함'],['daily','매일 (근무일)'],['weekly',`매주 ${DOW[x.getDay()]}요일`],['weekdays','주중 매일(월-금)'],['monthly',`매월 ${x.getDate()}일`],['custom','맞춤 (요일 고르기)']].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+  $('fRep').value=cur}
+function repDaysUI(){$('fRepDays').innerHTML=[1,2,3,4,5,6,0].map(d=>`<button type="button" data-rd="${d}" aria-pressed="${repDays.includes(d)}">${DOW[d]}</button>`).join('')}
+function ongoingUI(){const r=$('fRep').value!=='none',on=!r&&$('fOngoing').checked,day=!r&&$('fDay').checked;
+  $('lOn').hidden=r;$('lDay').hidden=r;$('lDue').hidden=r||on||day;$('lEst').hidden=r||on||day;$('fRepDays').hidden=$('fRep').value!=='custom';if(!$('fRepDays').hidden)repDaysUI()}
+$('fRep').addEventListener('change',()=>{ongoingUI();preview()});
+$('fStart').addEventListener('change',()=>{repOptions();preview()});
+$('fRepDays').addEventListener('click',e=>{const b=e.target.closest('[data-rd]');if(!b)return;const d=+b.dataset.rd;repDays=repDays.includes(d)?repDays.filter(x=>x!==d):[...repDays,d];repDaysUI();preview()});
+$('fOngoing').addEventListener('change',()=>{if($('fOngoing').checked)$('fDay').checked=false;ongoingUI();preview()});
+// 당일 업무: 데드라인 = 시작일, 예상 기간 비움
+$('fDay').addEventListener('change',()=>{if($('fDay').checked){$('fOngoing').checked=false;$('fEst').value='';$('fDue').value=$('fStart').value}ongoingUI();preview()});
 function preview(){
-  const n=Math.round(num($('fEst').value)),s=$('fStart').value,d=$('fDue').value;
-  if(!(n>0)||!s||!d){$('fPreview').textContent='예상 기간을 넣으면 언제 끝날지 미리 보여줍니다.';return}
+  if($('fRep').value!=='none'){const v=$('fRep').value,lab=v==='custom'?(repDays.length?repLabel({type:'custom',days:repDays},$('fStart').value||TODAY()):''):$('fRep').selectedOptions[0].textContent;
+    $('fPreview').textContent=lab?`${lab} 반복. 그날 '오늘' 탭에서 체크하면 됩니다.`:'반복할 요일을 골라주세요.';return}
+  if($('fDay').checked){$('fPreview').textContent=`${md($('fStart').value||TODAY())} 하루에 끝나는 당일 업무입니다.`;return}
+  if($('fOngoing').checked){$('fPreview').textContent=`${$('fStart').value?md($('fStart').value)+'부터 ':''}마감 없이 계속하는 일입니다. 오늘 탭 직원 카드 아래 '상시 업무'에 모입니다.`;return}
+  const s=$('fStart').value,d=$('fDue').value,n=Math.round(num($('fEst').value))||1;
+  if(!s||!d){$('fPreview').textContent='시작일과 데드라인을 넣으면 언제 끝날지 미리 보여줍니다.';return}
+  if(n===1&&!String($('fEst').value).trim()){$('fPreview').textContent=`${md(s)} 당일 업무 (예상 기간 비움 → 1일)`+(s>d?` · 마감 ${md(d)}보다 늦습니다`:'');return}
   const days=[];let x=s,g=0;while(days.length<n&&g++<400){if(isWork(x))days.push(x);x=add(x,1)}
   const end=days[days.length-1];
   $('fPreview').textContent=`${md(s)} 시작 → ${md(end)} 끝 예정 (근무일 ${n}일)`+(end>d?` · 마감 ${md(d)}보다 늦습니다`:` · 마감까지 여유 ${diff(end,d)}일`);
 }
-['fEmp','fEst','fStart','fDue'].forEach(id=>$(id).addEventListener('input',preview));
+let selEmps=[];
+function empChips(){$('fEmps').innerHTML=S.emps.map(e=>`<button type="button" data-fe="${e.id}" aria-pressed="${selEmps.includes(e.id)}"><span class="dot" style="--c:${colorOf(e)}"></span>${esc(e.name)}</button>`).join('')}
+$('fEmps').addEventListener('click',e=>{const b=e.target.closest('[data-fe]');if(!b)return;const id=b.dataset.fe;selEmps=selEmps.includes(id)?selEmps.filter(x=>x!==id):[...selEmps,id];empChips()});
+['fEst','fStart','fDue'].forEach(id=>$(id).addEventListener('input',preview));
+// 시작일 = 데드라인이면 당일 업무로 예상 기간 1일 자동 입력
+['fStart','fDue'].forEach(id=>$(id).addEventListener('change',()=>{if($('fStart').value&&$('fStart').value===$('fDue').value){$('fEst').value='1';preview()}}));
 $('fSave').addEventListener('click',()=>{
   const title=$('fTitle').value.trim();
   if(!title){toast('할일 이름을 넣어주세요');$('fTitle').focus();return}
-  if(!(Math.round(num($('fEst').value))>0)){toast('예상 기간(일)을 넣어주세요');$('fEst').focus();return}
-  let start=$('fStart').value||TODAY(),due=$('fDue').value||start;
+  if(!selEmps.length){toast('담당 직원을 골라주세요');return}
+  const rp=$('fRep').value,isRep=rp!=='none',ongoing=!isRep&&$('fOngoing').checked,sameDay=!isRep&&!ongoing&&$('fDay').checked;
+  if(rp==='custom'&&!repDays.length){toast('반복할 요일을 골라주세요');return}
+  let start=$('fStart').value||TODAY(),due=(ongoing||isRep)?NODUE:sameDay?start:($('fDue').value||start);
   if(due<start){toast('데드라인이 시작일보다 빠릅니다');return}
-  const data={title,emp:$('fEmp').value,pri:+$('fPri').value,start,due,est:Math.max(1,Math.round(num($('fEst').value))),note:$('fNote').value};
+  const data={title,emp:selEmps[0],co:selEmps.slice(1),pri:+$('fPri').value,start,due,ongoing:ongoing?1:0,rep:isRep?{type:rp,days:rp==='custom'?repDays.slice():[]}:null,est:(ongoing||isRep||sameDay)?1:Math.max(1,Math.round(num($('fEst').value))||1),note:$('fNote').value};
   if(editId){Object.assign(S.tasks.find(x=>x.id===editId),data,{ex:0})}
-  else S.tasks.push({id:'t'+Date.now(),prog:0,created:Date.now(),...data});
+  else S.tasks.push({id:'t'+Date.now(),prog:0,created:Date.now(),hist:[[TODAY(),0]],...data});
   save();closeSheet();render();toast(editId?'수정했습니다':'추가했습니다');
 });
 $('fCancel').addEventListener('click',closeSheet);
@@ -434,21 +694,27 @@ $('fab').addEventListener('click',()=>openSheet());
 
 // delegated clicks
 document.addEventListener('click',e=>{
+  const cy=e.target.closest('[data-carry]');if(cy){doCarry([cy.dataset.carry]);return}
+  const ca=e.target.closest('[data-carryall]');if(ca){const [ws,we]=rpRange();doCarry(carryList(ws,we,schedule()).map(t=>t.id));return}
+  const rdn=e.target.closest('[data-rdone]');if(rdn){toggleRep(rdn.dataset.rdone,TODAY());return}
+  const oc=e.target.closest('[data-occ]');if(oc&&!e.target.closest('.sheet')){const [id,d]=oc.dataset.occ.split('|');openOcc(id,d);return}
+  const gr=e.target.closest('[data-goreport]');if(gr){rpOff=-1;show('report');return}
   const ed=e.target.closest('[data-edit]');if(ed&&!e.target.closest('.sheet')){openSheet(ed.dataset.edit);return}
-  const pg=e.target.closest('[data-prog]');if(pg){const t=S.tasks.find(x=>x.id===pg.dataset.prog);t.prog=+pg.dataset.p;save();render();if(t.prog===100)toast('완료 처리했습니다');return}
+  const pg=e.target.closest('[data-prog]');if(pg){const t=S.tasks.find(x=>x.id===pg.dataset.prog);setProg(t,+pg.dataset.p);save();render();if(t.prog===100)toast('완료 처리했습니다');return}
   const f=e.target.closest('[data-f]');if(f){filt=f.dataset.f;render();return}
   const wd=e.target.closest('[data-wd]');if(wd){const d=+wd.dataset.wd;S.workdays=S.workdays.includes(d)?S.workdays.filter(x=>x!==d):[...S.workdays,d];save();render();return}
+  const mu=e.target.closest('[data-up],[data-down]');if(mu&&!mu.disabled){const i=+(mu.dataset.up??mu.dataset.down),j=mu.dataset.up!=null?i-1:i+1;if(j>=0&&j<S.emps.length){[S.emps[i],S.emps[j]]=[S.emps[j],S.emps[i]];save();render()}return}
   const de=e.target.closest('[data-delemp]');if(de){
-    const id=de.dataset.delemp,cnt=S.tasks.filter(t=>t.emp===id).length;
+    const id=de.dataset.delemp,cnt=S.tasks.filter(t=>has(t,id)).length;
     if(cnt&&!de.dataset.arm){de.dataset.arm=1;de.textContent=`할일 ${cnt}개도 삭제`;return}
-    S.emps=S.emps.filter(x=>x.id!==id);S.tasks=S.tasks.filter(t=>t.emp!==id);if(filt===id)filt='all';save();render();return}
+    S.emps=S.emps.filter(x=>x.id!==id);S.tasks.forEach(t=>{if(t.co)t.co=t.co.filter(x=>x!==id);if(t.emp===id&&t.co&&t.co.length)t.emp=t.co.shift()});S.tasks=S.tasks.filter(t=>t.emp!==id);if(filt===id)filt='all';save();render();return}
 });
 $('addEmp').addEventListener('click',addEmp);
 $('newEmp').addEventListener('keydown',e=>{if(e.key==='Enter')addEmp()});
 function addEmp(){const n=$('newEmp').value.trim();if(!n){$('newEmp').focus();return}
   const used=S.emps.map(e=>e.c);let c=0;while(used.includes(c)&&c<6)c++;
   S.emps.push({id:'e'+Date.now(),name:n,c:c%6});$('newEmp').value='';save();render();toast(n+' 추가');}
-$('clearEx').addEventListener('click',()=>{S.tasks=S.tasks.filter(t=>!t.ex);const keep=new Set(S.tasks.map(t=>t.emp));S.emps=S.emps.filter(e=>!e.ex||keep.has(e.id));save();render();toast('예시를 지웠습니다')});
+$('clearEx').addEventListener('click',()=>{S.tasks=S.tasks.filter(t=>!t.ex);const keep=new Set(S.tasks.flatMap(members));S.emps=S.emps.filter(e=>!e.ex||keep.has(e.id));save();render();toast('예시를 지웠습니다')});
 $('wkPrev').addEventListener('click',()=>{wkStart=add(wkStart,-7);render()});
 $('wkNext').addEventListener('click',()=>{wkStart=add(wkStart,7);render()});
 
@@ -482,10 +748,11 @@ function widgetData(sc){
     const d=add(t,i),lines=[];let n=0;
     S.emps.forEach(e=>{
       const ids=((sc.byDay[e.id]||{})[d]||[]).slice();
-      if(i===0)S.tasks.filter(x=>x.emp===e.id&&num(x.prog)<100&&sc.byTask[x.id].finish<t).forEach(x=>ids.push(x.id));
+      if(i===0)S.tasks.filter(x=>has(x,e.id)&&num(x.prog)<100&&sc.byTask[x.id].finish<t).forEach(x=>ids.push(x.id));
       ids.forEach(id=>{const k=S.tasks.find(x=>x.id===id),info=sc.byTask[id],j=info.days.indexOf(d),m=info.days.length;n++;
         lines.push(`${e.name} · ${k.title}`+(j<0?' (기간 초과)':m>1?` (${j+1}/${m})`:'')+(k.due===d?' · 오늘 마감':''))});
     });
+    S.emps.forEach(e=>S.tasks.filter(k=>k.rep&&has(k,e.id)&&occOn(k,d)&&!repDone(k,d)).forEach(k=>{n++;lines.push(`${e.name} · ↻ ${k.title}`)}));
     days[d]={title:`${md(d)} · 할일 ${n}건`,lines};
   }
   return {days,updated:new Date().toISOString()};
@@ -502,9 +769,13 @@ async function syncNative(){
     if(pend.notifications.length)await P.LocalNotifications.cancel({notifications:pend.notifications.map(x=>({id:x.id}))});
     const [h,m]=hm(),now=new Date(),t=TODAY(),list=[];let id=1;
     const wd=widgetData(sc).days;
+    // 매주 월요일: 지난주 리포트 알림 (요약 숫자는 저장할 때마다 다시 계산해 예약)
+    for(let k=0;k<3;k++){const mon=add(monOf(t),7*k),when=new Date(at(mon,h,m).getTime()+120000);if(when<=now)continue;
+      const R=weekData(add(mon,-7),add(mon,-1),true);
+      list.push({id:900+k,title:'지난주 리포트',body:`완료 ${R.nDone}건 · 진행 중 ${R.nOpen}건`+(R.nLate?` · 마감 지남 ${R.nLate}건`:'')+'\n눌러서 직원별로 보기',extra:{view:'report'},schedule:{at:when,allowWhileIdle:true}})}
     for(let i=0;i<14;i++){const d=add(t,i),w=wd[d];if(!isWork(d)||!w.lines.length)continue;const when=at(d,h,m);if(when<=now)continue;
       list.push({id:id++,title:`오늘 할일 ${w.lines.length}건`,body:w.lines.slice(0,4).join('\n'),schedule:{at:when,allowWhileIdle:true}})}
-    S.tasks.filter(x=>num(x.prog)<100).forEach(x=>{const e=empOf(x.emp),nm=e?e.name:'';
+    S.tasks.filter(x=>!x.ongoing&&num(x.prog)<100).forEach(x=>{const nm=who(x);
       [[add(x.due,-1),'내일 마감'],[x.due,'오늘 마감']].forEach(([d,lab])=>{const when=at(d,h,m);if(when<=now)return;
         list.push({id:id++,title:`${lab} · ${nm}`,body:x.title,schedule:{at:new Date(when.getTime()+60000),allowWhileIdle:true}})})});
     if(list.length)await P.LocalNotifications.schedule({notifications:list.slice(0,60)});
@@ -514,11 +785,12 @@ let syncT;window.__lfSync=()=>{clearTimeout(syncT);syncT=setTimeout(syncNative,4
 if(NATIVE){
   $('alarmRow').hidden=false;$('alarmTime').value=S.alarm||'09:00';
   $('alarmTime').addEventListener('change',()=>{S.alarm=$('alarmTime').value||'09:00';save();toast('알림 시각 '+S.alarm)});
-  $('notiHelp').textContent='매일 정해진 시각에 오늘 할일 요약, 마감 하루 전·당일에 알림을 보냅니다. 앱이 꺼져 있어도 옵니다.';
+  $('notiHelp').textContent='매일 정해진 시각에 오늘 할일 요약, 마감 하루 전·당일에 알림을 보냅니다. 매주 월요일엔 지난주 리포트 알림도 옵니다. 앱이 꺼져 있어도 옵니다.';
   notiState=async function(){try{const p=await P.LocalNotifications.checkPermissions();$('notiState').textContent=p.display==='granted'?'켜짐':'꺼짐';$('notiBtn').hidden=p.display==='granted'}catch(e){$('notiState').textContent='확인 불가'}};
   const btn=$('notiBtn').cloneNode(true);$('notiBtn').replaceWith(btn);
   btn.addEventListener('click',async()=>{try{await P.LocalNotifications.requestPermissions()}catch(e){}notiState();syncNative()});
   (async()=>{try{const p=await P.LocalNotifications.checkPermissions();if(p.display==='prompt'||p.display==='prompt-with-rationale')await P.LocalNotifications.requestPermissions()}catch(e){}syncNative()})();
+  try{P.LocalNotifications.addListener('localNotificationActionPerformed',ev=>{const x=ev&&ev.notification&&ev.notification.extra;if(x&&x.view==='report'){rpOff=-1;show('report')}})}catch(e){}
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();syncNative()}});
 }
 render();
