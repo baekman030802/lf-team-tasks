@@ -127,6 +127,7 @@ button:focus-visible,.fbtn:focus-visible{outline:2px solid var(--ink);outline-of
 .sheet[hidden]{display:none!important}
 .sheet .panel{background:var(--paper);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:16px 16px calc(18px + var(--sab));display:grid;gap:12px}
 .sheet h3{margin:0;font-size:1rem}
+.rn-ask{display:grid;gap:12px}.rn-ask b{font-size:1.05rem}
 
 
 /* weekly report */
@@ -193,6 +194,7 @@ button:focus-visible,.fbtn:focus-visible{outline:2px solid var(--ink);outline-of
 .cbx{flex:none;width:28px;height:28px;padding:0;border-radius:8px;border:2px solid var(--line);background:var(--paper);color:transparent;font:700 .95rem/1 var(--f-body);display:grid;place-items:center;cursor:pointer}
 .cbx.on{background:var(--good);border-color:var(--good);color:var(--paper)}
 .task .row1 .cbx{margin-left:4px}
+.task .wd{font-size:1.02rem;font-weight:700;color:var(--ink);padding-left:18px;letter-spacing:-.01em}
 .slice.done .t,.task.done .t{text-decoration:line-through;color:var(--muted)}
 .rmemo{color:var(--ink);opacity:.8}
 /* 리포트: 작게, 메모까지 보이게 (읽기 전용) */
@@ -299,7 +301,9 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
     <section class="card">
       <h2>알림</h2>
       <div class="btns"><button id="notiBtn">알림 켜기</button><span class="hint" id="notiState"></span></div>
-      <label id="alarmRow" hidden>매일 알림 시각<input id="alarmTime" type="time" value="09:00"></label>
+      <label id="alarmRow" hidden>매일 아침 요약 알림 시각<input id="alarmTime" type="time" value="09:00"></label>
+      <label class="chk" id="preRow"><input id="pre10" type="checkbox">시간 정한 할일, 10분 전에도 알림 (폰 앱)</label>
+      <div class="btns" id="exactRow" hidden><span class="hint" id="exactState"></span><button class="plain sm" id="exactBtn">정확한 시간 알람 허용</button></div>
       <span class="hint" id="notiHelp">마감 오늘·내일, 마감을 넘길 것 같은 일을 하루 한 번 알려줍니다. 웹 페이지에서는 이 화면이 열려 있을 때만 알림이 옵니다. 갤럭시 앱(APK)에서는 앱이 꺼져 있어도 정해진 시각에 알림이 오고, 홈 화면 위젯도 쓸 수 있습니다.</span>
     </section>
     <section class="card">
@@ -345,6 +349,7 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
       <label class="full chk" id="lDay"><input id="fDay" type="checkbox">당일 업무 (시작일 하루에 끝나는 일)</label>
       <label>시작일<input id="fStart" type="date"></label>
       <label id="lDue">데드라인<input id="fDue" type="date"></label>
+      <label id="lTime">알람 시간 (선택)<input id="fTime" type="time"></label>
       <label class="full" id="lRep">반복<select id="fRep"></select></label>
       <div class="days full" id="fRepDays" hidden></div>
       <label class="full" id="lEst">예상 기간 (근무일)<div class="pair"><input id="fEst" type="text" inputmode="numeric" autocomplete="off" placeholder="비우면 당일 (1일)"><span class="hint" style="align-self:center">일</span></div></label>
@@ -372,8 +377,11 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="rnTitle">
     <h3 id="rnTitle"></h3>
     <span class="hint" id="rnInfo"></span>
-    <label>이번 내용 메모 (선택)<textarea id="rnText" placeholder="예: 이번 주는 북엔드 신제품 릴스 2편"></textarea></label>
-    <div class="btns"><button id="rnSave">완료로 저장</button><button class="plain" id="rnUndo" hidden>체크 해제</button><button class="plain" id="rnClose" style="margin-left:auto">닫기</button></div>
+    <div id="rnAsk" class="rn-ask"><b>특이사항 있나요?</b>
+      <div class="btns"><button id="rnNo">아니오 · 완료</button><button class="ghost" id="rnYes">예 · 메모 쓰기</button><button class="plain" id="rnAskX" style="margin-left:auto">닫기</button></div></div>
+    <div id="rnMemo" hidden>
+    <label>특이사항<textarea id="rnText" placeholder="예: 거래처 회신 늦어서 하루 지연"></textarea></label>
+    <div class="btns"><button id="rnSave">저장</button><button class="plain" id="rnUndo" hidden>체크 해제</button><button class="plain" id="rnClose" style="margin-left:auto">취소</button></div></div>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -485,14 +493,14 @@ function renderToday(sc){
   $('todayList').innerHTML=S.emps.length?S.emps.map(e=>{
     const c=colorOf(e);
     // 오늘 마감인 일만 (사용자 요청). 완료한 것도 체크된 채로 남김
-    const list=S.tasks.filter(x=>has(x,e.id)&&!x.rep&&!x.ongoing&&x.due===t).sort((a,b)=>(num(a.prog)>=100)-(num(b.prog)>=100)||b.pri-a.pri);
+    const list=S.tasks.filter(x=>has(x,e.id)&&!x.rep&&!x.ongoing&&x.due===t).sort((a,b)=>(num(a.prog)>=100)-(num(b.prog)>=100)||(a.time||'99').localeCompare(b.time||'99')||b.pri-a.pri);
     const ids=list.filter(x=>num(x.prog)<100).map(x=>x.id);
     const rows=list.map(k=>{const dn=num(k.prog)>=100,est=estD(k),oth=withOthers(k,e.id);
       return `<div class="slice ${dn?'done':''}" data-edit="${k.id}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span>${cbx(k)}
-        <span class="sub">${k.pri===3?'<span class="pill p-bad">매우 중요</span>':''}${est>1?`<span>예상 ${est}일</span>`:''}${oth?`<span>${esc(oth)}</span>`:''}${k.ex?'<span class="tag">예시</span>':''}</span></div>`}).join('');
+        <span class="sub">${k.time?`<span class="pill p-acc">${k.time}</span>`:''}${k.pri===3?'<span class="pill p-bad">매우 중요</span>':''}${est>1?`<span>예상 ${est}일</span>`:''}${oth?`<span>${esc(oth)}</span>`:''}${k.ex?'<span class="tag">예시</span>':''}</span></div>`}).join('');
     const on=[]; // 상시 업무는 주간·리포트에서만 보임
     const rp=S.tasks.filter(x=>x.rep&&has(x,e.id)&&occOn(x,t));
-    const rRows=rp.map(k=>{const dn=repDone(k,t);return `<div class="slice ${dn?'done':''}" data-occ="${k.id}|${t}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span>${cbx(k,t)}<span class="sub"><span>↻ ${repLabel(k.rep,k.start)}${origOf(k,t)!==t?` · 이번만 옮김 (원래 ${md(origOf(k,t))})`:''}</span>${memoOf(k,t)?`<span class="rmemo">메모: ${esc(memoOf(k,t))}</span>`:''}</span></div>`}).join('');
+    const rRows=rp.map(k=>{const dn=repDone(k,t);return `<div class="slice ${dn?'done':''}" data-occ="${k.id}|${t}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span>${cbx(k,t)}<span class="sub">${k.time?`<span class="pill p-acc">${k.time}</span>`:''}<span>↻ ${repLabel(k.rep,k.start)}${origOf(k,t)!==t?` · 이번만 옮김 (원래 ${md(origOf(k,t))})`:''}</span>${memoOf(k,t)?`<span class="rmemo">메모: ${esc(memoOf(k,t))}</span>`:''}</span></div>`}).join('');
     const oRows=on.map(k=>`<div class="slice" data-edit="${k.id}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span><span class="daystep" style="background:var(--soft);color:var(--muted)">상시</span><span class="sub"><span>진행 ${num(k.prog)}%</span></span></div>`).join('');
     return `<section class="card" style="--c:${c}"><div class="emp-head"><span class="dot"></span><b>${esc(e.name)}</b><span class="load">오늘 ${ids.length}건${rp.length?` · 반복 ${rp.length}`:''}${on.length?` · 상시 ${on.length}`:''}</span></div>
       ${rows||(on.length||rp.length?'':'<div class="empty">오늘 할 일이 없습니다</div>')}${rp.length?`<div class="rp-sec">반복 업무</div><div>${rRows}</div>`:''}${on.length?`<div class="rp-sec">상시 업무</div><div>${oRows}</div>`:''}</section>`}).join('')
@@ -520,9 +528,9 @@ function renderWeek(sc){
   const g=dayItems(sc,wkSel),cnt=g.reduce((s,v)=>s+v.items.filter(i=>!i.skip).length,0);
   $('wkDayLbl').textContent=`${md(wkSel)}${wkSel===t?' · 오늘':''} · 할일 ${cnt}개`;
   const row=(x,e)=>{const k=x.k,oth=withOthers(k,e.id);
-    if(x.kind==='rep')return `<div class="witem ${x.done?'done':''} ${x.skip?'skip':''}" data-occ="${k.id}|${wkSel}"><span class="t">${esc(k.title)}</span><span class="wb">${x.skip?'건너뜀':x.done?'✓ 완료':'↻ 반복'}</span><span class="sub">${esc(repLabel(k.rep,k.start))}${oth?' · '+esc(oth):''}${memoOf(k,wkSel)?' · 메모: '+esc(memoOf(k,wkSel)):''}</span></div>`;
+    if(x.kind==='rep')return `<div class="witem ${x.done?'done':''} ${x.skip?'skip':''}" data-occ="${k.id}|${wkSel}"><span class="t">${esc(k.title)}</span><span class="wb">${x.skip?'건너뜀':x.done?'✓ 완료':'↻ 반복'}</span><span class="sub">${k.time?k.time+' · ':''}${esc(repLabel(k.rep,k.start))}${oth?' · '+esc(oth):''}${memoOf(k,wkSel)?' · 메모: '+esc(memoOf(k,wkSel)):''}</span></div>`;
     const badge=x.done?'✓ 완료':k.pri===3?'매우 중요':k.pri===2?'높음':'',est=estD(k);
-    return `<div class="witem ${x.done?'done':''}" data-edit="${k.id}"><span class="t">${esc(k.title)}</span>${badge?`<span class="wb">${badge}</span>`:'<span></span>'}<span class="sub">이날 마감${est>1?` · 예상 ${est}일`:''}${oth?' · '+esc(oth):''}</span></div>`};
+    return `<div class="witem ${x.done?'done':''}" data-edit="${k.id}"><span class="t">${esc(k.title)}</span>${badge?`<span class="wb">${badge}</span>`:'<span></span>'}<span class="sub">${k.time?k.time+' · ':''}이날 마감${est>1?` · 예상 ${est}일`:''}${oth?' · '+esc(oth):''}</span></div>`};
   $('wkDay').innerHTML=g.length?g.map(v=>`<div class="wgrp" style="--c:${colorOf(v.e)}"><div class="wname"><span class="dot"></span>${esc(v.e.name)}<span class="hint">${v.items.length}개</span></div>${v.items.map(x=>row(x,v.e)).join('')}</div>`).join('')
     :`<div class="empty">${isWork(wkSel)?'이날은 할일이 없습니다':'쉬는 날입니다'}</div>`;
   const ord=id=>S.emps.findIndex(e=>e.id===id);
@@ -554,11 +562,12 @@ function renderTasks(sc){
   $('taskCnt').textContent=list.length+'개';
   $('taskList').innerHTML=list.length?list.map(t=>{
     const e=empOf(t.emp),info=sc.byTask[t.id]||{days:[]},n=info.days.length,dn=diff(TODAY(),t.due);
-    const span=n?(n>1?`${md(info.days[0])} → ${md(info.finish)}`:`${md(info.days[0])} 하루`):'';
+    const span=n?(n>1?`${md(info.days[0])} → ${md(info.finish)}`:`${md(info.days[0])} 당일`):'';
     const st=num(t.prog)>=100?'<span class="pill p-good">완료</span>':dn<0?'<span class="pill p-bad">마감 지남</span>':info.late?'<span class="pill p-warn">마감 위험</span>':dn<=1?'<span class="pill p-warn">'+dday(t.due)+'</span>':'';
     return `<div class="task ${num(t.prog)>=100?'done':''} ${hot(t)?'hot':''}">
       <div class="row1"><span class="dot" style="--c:${colorOf(e)}"></span><span class="t" data-edit="${t.id}">${esc(t.title)}</span>${st}${cbx(t)}</div>
-      <div class="meta"><span>${esc(who(t)||'담당 없음')}</span>${t.rep?`<span class="tag">↻ ${repLabel(t.rep,t.start)}</span>`:t.ongoing?'<span class="tag">상시 업무</span>':`<span>마감 ${md(t.due)} ${dday(t.due)}</span><span>예상 ${estD(t)}일</span>`}${span?`<span>${span}</span>`:''}${t.pri===3?'<span class="pill p-bad">매우 중요</span>':['낮음','','높음'][t.pri]?`<span class="tag">${['낮음','','높음'][t.pri]}</span>`:''}${t.ex?'<span class="tag">예시</span>':''}${movedTag(t)}</div>
+      ${span?`<div class="wd">${span}</div>`:''}
+      <div class="meta"><span>${esc(who(t)||'담당 없음')}</span>${t.time?`<span class="pill p-acc">${t.time}</span>`:''}${t.rep?`<span class="tag">↻ ${repLabel(t.rep,t.start)}</span>`:t.ongoing?'<span class="tag">상시 업무</span>':`<span>마감 ${md(t.due)} ${dday(t.due)}</span><span>예상 ${estD(t)}일</span>`}${t.pri===3?'<span class="pill p-bad">매우 중요</span>':['낮음','','높음'][t.pri]?`<span class="tag">${['낮음','','높음'][t.pri]}</span>`:''}${t.ex?'<span class="tag">예시</span>':''}${movedTag(t)}</div>
       ${t.rep&&!occOn(t,TODAY())?`<span class="hint">오늘은 없음${nextOcc(t)?" · 다음 "+md(nextOcc(t)):""}</span>`:""}
     </div>`}).join(''):'<div class="empty">할일이 없습니다. 오른쪽 아래 + 할일로 추가하세요.</div>';
 }
@@ -567,7 +576,7 @@ function renderTasks(sc){
 function renderTeam(){
   $('empList').innerHTML=S.emps.length?S.emps.map((e,i)=>`<div class="emp-row"><span class="mv"><button class="plain" data-up="${i}" aria-label="위로" ${i===0?'disabled':''}>▲</button><button class="plain" data-down="${i}" aria-label="아래로" ${i===S.emps.length-1?'disabled':''}>▼</button></span><span class="dot" style="--c:${colorOf(e)}"></span><span class="n">${esc(e.name)}${e.ex?' <span class="tag">예시</span>':''}</span><span class="hint">${S.tasks.filter(t=>has(t,e.id)&&num(t.prog)<100).length}건 진행 중</span><button class="ghost" data-delemp="${e.id}">삭제</button></div>`).join(''):'<div class="empty">아직 직원이 없습니다</div>';
   // 근무 요일 설정 화면은 없앰 (저장된 근무 요일은 그대로 사용)
-  notiState();cloudUI();presetUI();laterUI();
+  notiState();cloudUI();presetUI();laterUI();$('pre10').checked=!!S.pre10;
 }
 
 // ---------- 주간 리포트 (지난주 월~일) ----------
@@ -604,7 +613,7 @@ function makeSnap(ws,we){const past=we<TODAY(),R=weekData(ws,we,past),until=past
   const co=t=>!!(t.co&&t.co.length);
   return {ws,we,at:Date.now(),k:[R.nDone,R.nOpen,R.nLate],
     emps:R.emps.map(({e,done,open,ong,reps})=>({n:e.name,c:e.c,
-      done:done.map(t=>({t:t.title,late:t.doneAt>dueOf(t),d:t.doneAt,co:co(t),mv:t.moves||0,note:t.note||''})),
+      done:done.map(t=>({t:t.title,late:t.doneAt>dueOf(t),d:t.doneAt,co:co(t),mv:t.moves||0,note:t.note||'',sp:t.dnote||''})),
       open:open.map(t=>({t:t.title,late:dueOf(t)<R.ref,due:t.due,co:co(t),mv:t.moves||0,note:t.note||''})),
       reps:reps.map(t=>{const [ok,n]=repCount(t,ws,we,until);return {t:t.title,ok,n,m:memos(t),co:co(t)}}).filter(x=>x.n>0),
       ong:ong.map(t=>({t:t.title,g:gain(t,ws,we),note:t.note||''}))}))}}
@@ -630,7 +639,7 @@ function renderReport(sc){
   $('rpList').innerHTML=P.emps.length?P.emps.map(v=>{const tot=v.done.length+v.open.length+v.reps.length;
     return `<section class="card" style="--c:${colorOf(v)}">
       <div class="emp-head"><span class="dot"></span><b>${esc(v.n)}</b><span class="load">완료 ${v.done.length} · 진행 ${v.open.length}</span></div>
-      ${v.done.length?`<div class="rp-sec">완료</div><div>${v.done.map(x=>`<div class="rr">${tt(x)}<span class="st ${x.late?'bad':'ok'}">${x.late?'늦게 완료':'✓ 완료'}</span>${nt(x.note)}</div>`).join('')}</div>`:''}
+      ${v.done.length?`<div class="rp-sec">완료</div><div>${v.done.map(x=>`<div class="rr">${tt(x)}<span class="st ${x.late?'bad':'ok'}">${x.late?'늦게 완료':'✓ 완료'}</span>${x.sp?nt('특이사항 · '+x.sp):''}${nt(x.note)}</div>`).join('')}</div>`:''}
       ${v.open.length?`<div class="rp-sec">진행 중</div><div>${v.open.map(x=>`<div class="rr">${tt(x)}<span class="st ${x.late?'bad':''}">${x.late?'지남':'진행 중'}</span>${nt(x.note)}</div>`).join('')}</div>`:''}
       ${v.reps.length?`<div class="rp-sec">반복 업무</div><div>${v.reps.map(x=>`<div class="rr">${tt(x)}<span class="st ${x.ok===x.n?'ok':P.frozen?'bad':''}">${x.ok}/${x.n}회</span>${x.m.map(([d,m])=>nt(md(d)+' · '+m)).join('')}</div>`).join('')}</div>`:''}
       ${tot?'':'<div class="empty">기록 없음</div>'}
@@ -642,7 +651,7 @@ function rpText(){
   L.push(`완료 ${P.k[0]}건 · 진행 중 ${P.k[1]}건 · 마감 지남 ${P.k[2]}건`);
   P.emps.forEach(v=>{
     L.push('',`[${v.n}] 완료 ${v.done.length} · 진행 중 ${v.open.length}`);
-    v.done.forEach(x=>{L.push(`  ✓ ${x.t}${x.late?' (늦게 완료)':''}`);if(x.note)L.push(`      메모: ${x.note}`)});
+    v.done.forEach(x=>{L.push(`  ✓ ${x.t}${x.late?' (늦게 완료)':''}`);if(x.sp)L.push(`      특이사항: ${x.sp}`);if(x.note)L.push(`      메모: ${x.note}`)});
     v.reps.forEach(x=>{L.push(`  ↻ ${x.t} ${x.ok}/${x.n}회`);x.m.forEach(([d,m])=>L.push(`      ${md(d)}: ${m}`))});
     v.open.forEach(x=>{L.push(`  - ${x.t} (마감 ${md(x.due)}${x.late?', 마감 지남':''}${x.mv?`, 넘김 ${x.mv}회`:''})`);if(x.note)L.push(`      메모: ${x.note}`)});
   });
@@ -803,17 +812,27 @@ document.addEventListener('click',e=>{
 
 // ---------- 반복 업무 체크 → 메모 ----------
 let rnT=null,rnD=null;
-function openRn(id,d){const t=S.tasks.find(x=>x.id===id);if(!t)return;rnT=t;rnD=d;const dn=repDone(t,d);
-  $('rnTitle').textContent=t.title;$('rnInfo').textContent=`${md(d)} · ↻ ${repLabel(t.rep,t.start)} · ${who(t)}`;
-  $('rnText').value=memoOf(t,d);$('rnUndo').hidden=!dn;$('rnSave').textContent=dn?'메모 저장':'완료로 저장';$('rn').hidden=false;setTimeout(()=>$('rnText').focus(),50)}
+const isDoneK=(t,d)=>t.rep?repDone(t,d):num(t.prog)>=100;
+function openRn(id,d){const t=S.tasks.find(x=>x.id===id);if(!t)return;rnT=t;rnD=d||TODAY();const dn=isDoneK(t,rnD);
+  $('rnTitle').textContent=t.title;$('rnInfo').textContent=t.rep?`${md(rnD)} · ↻ ${repLabel(t.rep,t.start)} · ${who(t)}`:`${who(t)} · 마감 ${md(t.due)}`;
+  $('rnText').value=t.rep?memoOf(t,rnD):(t.dnote||'');$('rnUndo').hidden=!dn;
+  $('rnAsk').hidden=dn;$('rnMemo').hidden=!dn;$('rnSave').textContent=dn?'메모 저장':'저장';$('rnClose').textContent=dn?'닫기':'취소';
+  $('rn').hidden=false;if(dn)setTimeout(()=>$('rnText').focus(),50)}
 function closeRn(){$('rn').hidden=true;rnT=null}
+function markDone(t,d,v){
+  if(t.rep){t.rdone=t.rdone||{};t.rdone[d]=1;t.rnote=t.rnote||{};if(v)t.rnote[d]=v;else delete t.rnote[d]}
+  else{setProg(t,100);if(v)t.dnote=v;else delete t.dnote}
+  save();closeRn();render();toast(v?'완료 · 특이사항 저장':'완료했습니다')}
 $('rnClose').addEventListener('click',closeRn);
+$('rnAskX').addEventListener('click',closeRn);
 $('rn').addEventListener('click',e=>{if(e.target===$('rn'))closeRn()});
-$('rnSave').addEventListener('click',()=>{const t=rnT;if(!t)return;const v=$('rnText').value.trim();
-  t.rdone=t.rdone||{};t.rdone[rnD]=1;t.rnote=t.rnote||{};if(v)t.rnote[rnD]=v;else delete t.rnote[rnD];
-  save();closeRn();render();toast(v?'완료 · 메모 저장':'완료했습니다')});
-$('rnUndo').addEventListener('click',()=>{const t=rnT;if(!t)return;if(t.rdone)delete t.rdone[rnD];save();closeRn();render();toast('체크를 해제했습니다')});
+$('rnNo').addEventListener('click',()=>{if(rnT)markDone(rnT,rnD,'')});
+$('rnYes').addEventListener('click',()=>{$('rnAsk').hidden=true;$('rnMemo').hidden=false;setTimeout(()=>$('rnText').focus(),50)});
+$('rnSave').addEventListener('click',()=>{const t=rnT;if(!t)return;markDone(t,rnD,$('rnText').value.trim())});
+$('rnUndo').addEventListener('click',()=>{const t=rnT;if(!t)return;if(t.rep){if(t.rdone)delete t.rdone[rnD];if(t.rnote)delete t.rnote[rnD]}else{setProg(t,0);delete t.dnote}save();closeRn();render();toast('체크를 해제했습니다')});
 $('ocDone').addEventListener('click',()=>{const t=ocT,d=ocD;closeOcc();if(t)openRn(t.id,d)});
+
+$('pre10').addEventListener('change',()=>{S.pre10=$('pre10').checked;save();toast(S.pre10?'10분 전 알림 켬':'10분 전 알림 끔')});
 
 // ---------- render all ----------
 let cur='today';
@@ -851,7 +870,7 @@ function openSheet(id){
   $('fDay').checked=!!(t&&!t.ongoing&&!t.rep&&t.due===t.start);
   repDays=t&&t.rep&&t.rep.days&&t.rep.days.length?t.rep.days.slice():[parse(t?t.start:today).getDay()];
   $('fRep').value='none';repOptions();$('fRep').value=t&&t.rep?t.rep.type:'none';ongoingUI();
-  $('fEst').value=t?t.est:'';
+  $('fEst').value=t?t.est:'';$('fTime').value=t&&t.time||'';
   $('fNote').value=t?t.note:'';
   $('fInfo').textContent=t?[t.doneAt?`${md(t.doneAt)} 완료`:'',t.moves?`${t.moves}번 넘김 (최대 ${MAXMOVE}번)`:'',t.origDue&&t.origDue!==t.due?`원래 마감 ${md(t.origDue)}`:''].filter(Boolean).join(' · '):'';
   $('fDel').hidden=!t;delete $('fDel').dataset.arm;$('fDel').textContent='삭제';
@@ -864,7 +883,7 @@ function repOptions(){const s=$('fStart').value||TODAY(),x=parse(s),cur=$('fRep'
   $('fRep').value=cur}
 function repDaysUI(){$('fRepDays').innerHTML=[1,2,3,4,5,6,0].map(d=>`<button type="button" data-rd="${d}" aria-pressed="${repDays.includes(d)}">${DOW[d]}</button>`).join('')}
 function ongoingUI(){const r=$('fRep').value!=='none',on=!r&&$('fOngoing').checked,day=!r&&$('fDay').checked;
-  $('lOn').hidden=r;$('lDay').hidden=r;$('lDue').hidden=r||on||day;$('lEst').hidden=r||on||day;$('fRepDays').hidden=$('fRep').value!=='custom';if(!$('fRepDays').hidden)repDaysUI()}
+  $('lOn').hidden=r;$('lDay').hidden=r;$('lTime').hidden=on;$('lDue').hidden=r||on||day;$('lEst').hidden=r||on||day;$('fRepDays').hidden=$('fRep').value!=='custom';if(!$('fRepDays').hidden)repDaysUI()}
 $('fRep').addEventListener('change',()=>{ongoingUI();preview()});
 $('fStart').addEventListener('change',()=>{repOptions();preview()});
 $('fRepDays').addEventListener('click',e=>{const b=e.target.closest('[data-rd]');if(!b)return;const d=+b.dataset.rd;repDays=repDays.includes(d)?repDays.filter(x=>x!==d):[...repDays,d];repDaysUI();preview()});
@@ -897,7 +916,7 @@ $('fSave').addEventListener('click',()=>{
   if(rp==='custom'&&!repDays.length){toast('반복할 요일을 골라주세요');return}
   let start=$('fStart').value||TODAY(),due=(ongoing||isRep)?NODUE:sameDay?start:($('fDue').value||start);
   if(due<start){toast('데드라인이 시작일보다 빠릅니다');return}
-  const data={title,emp:selEmps[0],co:selEmps.slice(1),pri:+$('fPri').value,start,due,ongoing:ongoing?1:0,rep:isRep?{type:rp,days:rp==='custom'?repDays.slice():[]}:null,est:(ongoing||isRep||sameDay)?1:Math.max(1,Math.round(num($('fEst').value))||1),note:$('fNote').value};
+  const data={time:ongoing?'':($('fTime').value||''),title,emp:selEmps[0],co:selEmps.slice(1),pri:+$('fPri').value,start,due,ongoing:ongoing?1:0,rep:isRep?{type:rp,days:rp==='custom'?repDays.slice():[]}:null,est:(ongoing||isRep||sameDay)?1:Math.max(1,Math.round(num($('fEst').value))||1),note:$('fNote').value};
   if(editId){Object.assign(S.tasks.find(x=>x.id===editId),data,{ex:0})}
   else S.tasks.push({id:'t'+Date.now(),prog:0,created:Date.now(),hist:[[TODAY(),0]],...data});
   const fromLater=!editId&&pendingLater;if(fromLater)S.later=(S.later||[]).filter(x=>x.id!==pendingLater);
@@ -917,7 +936,7 @@ document.addEventListener('click',e=>{
   const cy=e.target.closest('[data-carry]');if(cy){doCarry([cy.dataset.carry]);return}
   const ca=e.target.closest('[data-carryall]');if(ca){const [ws,we]=rpRange();doCarry(carryList(ws,we,schedule()).map(t=>t.id));return}
   const rdn=e.target.closest('[data-rdone]');if(rdn){openRn(rdn.dataset.rdone,rdn.dataset.rdate||TODAY());return}
-  const dne=e.target.closest('[data-done]');if(dne){const t=S.tasks.find(x=>x.id===dne.dataset.done);if(t){const was=num(t.prog)>=100;setProg(t,was?0:100);save();render();toast(was?'완료를 취소했습니다':'완료했습니다')}return}
+  const dne=e.target.closest('[data-done]');if(dne){const t=S.tasks.find(x=>x.id===dne.dataset.done);if(t){if(num(t.prog)>=100){setProg(t,0);delete t.dnote;save();render();toast('완료를 취소했습니다')}else openRn(t.id,TODAY())}return}
   const oc=e.target.closest('[data-occ]');if(oc&&!e.target.closest('.sheet')){const [id,d]=oc.dataset.occ.split('|');openOcc(id,d);return}
   const wdy=e.target.closest('[data-wday]');if(wdy){wkSel=wdy.dataset.wday;render();return}
   const gr=e.target.closest('[data-goreport]');if(gr){rpOff=-1;show('report');return}
@@ -974,9 +993,9 @@ function widgetData(sc){
   for(let i=0;i<14;i++){
     const d=add(t,i),lines=[];let n=0;
     S.emps.forEach(e=>{
-      S.tasks.filter(x=>has(x,e.id)&&!x.rep&&!x.ongoing&&num(x.prog)<100&&x.due===d).forEach(k=>{n++;lines.push(`${e.name} · ${k.title}`)});
+      S.tasks.filter(x=>has(x,e.id)&&!x.rep&&!x.ongoing&&num(x.prog)<100&&x.due===d).forEach(k=>{n++;lines.push(`${e.name} · ${k.time?k.time+' ':''}${k.title}`)});
     });
-    S.emps.forEach(e=>S.tasks.filter(k=>k.rep&&has(k,e.id)&&occOn(k,d)&&!repDone(k,d)).forEach(k=>{n++;lines.push(`${e.name} · ↻ ${k.title}`)}));
+    S.emps.forEach(e=>S.tasks.filter(k=>k.rep&&has(k,e.id)&&occOn(k,d)&&!repDone(k,d)).forEach(k=>{n++;lines.push(`${e.name} · ↻ ${k.time?k.time+' ':''}${k.title}`)}));
     days[d]={title:`${md(d)} · 할일 ${n}건`,lines};
   }
   return {days,updated:new Date().toISOString()};
@@ -993,6 +1012,15 @@ async function syncNative(){
     if(pend.notifications.length)await P.LocalNotifications.cancel({notifications:pend.notifications.map(x=>({id:x.id}))});
     const [h,m]=hm(),now=new Date(),t=TODAY(),list=[];let id=1;
     const wd=widgetData(sc).days;
+    // 시간 정한 할일 → 그 날짜·시간에 알람 (앞으로 14일, 반복 업무 포함). 알람 채널: 중요도 최고 + 진동
+    try{await P.LocalNotifications.createChannel({id:'lf_alarm',name:'할일 알람',description:'시간을 정한 할일 알람',importance:5,vibration:true,visibility:1})}catch(e){}
+    {const pre=!!S.pre10;let aid=2000;
+      const atT=(d,tm)=>{const v=tm.split(':').map(Number),x=parse(d);x.setHours(v[0]||0,v[1]||0,0,0);return x};
+      for(let i=0;i<14;i++){const d=add(t,i);
+        S.tasks.filter(x=>x.time&&!x.ongoing&&(x.rep?(occOn(x,d)&&!repDone(x,d)):(x.due===d&&num(x.prog)<100))).forEach(x=>{
+          const w=atT(d,x.time),w2=new Date(w.getTime()-600000);
+          if(w>now)list.push({id:aid++,title:`${x.time} · ${x.title}`,body:who(x)+(x.rep?' · 반복 업무':' · 오늘 마감'),channelId:'lf_alarm',schedule:{at:w,allowWhileIdle:true}});
+          if(pre&&w2>now)list.push({id:aid++,title:`10분 전 · ${x.title}`,body:`${x.time} · ${who(x)}`,channelId:'lf_alarm',schedule:{at:w2,allowWhileIdle:true}})})}}
     // 매주 월요일: 지난주 리포트 알림 (요약 숫자는 저장할 때마다 다시 계산해 예약)
     for(let k=0;k<3;k++){const mon=add(monOf(t),7*k),when=new Date(at(mon,h,m).getTime()+120000);if(when<=now)continue;
       const R=weekData(add(mon,-7),add(mon,-1),true);
@@ -1002,12 +1030,17 @@ async function syncNative(){
     S.tasks.filter(x=>!x.ongoing&&num(x.prog)<100).forEach(x=>{const nm=who(x);
       [[add(x.due,-1),'내일 마감'],[x.due,'오늘 마감']].forEach(([d,lab])=>{const when=at(d,h,m);if(when<=now)return;
         list.push({id:id++,title:`${lab} · ${nm}`,body:x.title,schedule:{at:new Date(when.getTime()+60000),allowWhileIdle:true}})})});
-    if(list.length)await P.LocalNotifications.schedule({notifications:list.slice(0,60)});
+    if(list.length)await P.LocalNotifications.schedule({notifications:list.slice(0,100)});
   }catch(e){}
 }
 let syncT;window.__lfSync=()=>{clearTimeout(syncT);syncT=setTimeout(syncNative,400)};
 if(NATIVE){
   $('alarmRow').hidden=false;$('alarmTime').value=S.alarm||'09:00';
+  $('exactRow').hidden=false;
+  const exS=async()=>{try{const r=await P.LocalNotifications.checkExactNotificationSetting();const ok=r.exact_alarm==='granted';
+    $('exactState').textContent=ok?'정확한 시간 알람: 허용됨':'정확한 시간 알람: 꺼짐 (몇 분 늦게 올 수 있음)';$('exactBtn').hidden=ok}catch(e){$('exactState').textContent='정확한 시간 알람: 확인 불가'}};
+  $('exactBtn').addEventListener('click',async()=>{try{await P.LocalNotifications.changeExactNotificationSetting()}catch(e){}exS();syncNative()});
+  exS();
   $('alarmTime').addEventListener('change',()=>{S.alarm=$('alarmTime').value||'09:00';save();toast('알림 시각 '+S.alarm)});
   $('notiHelp').textContent='매일 정해진 시각에 오늘 할일 요약, 마감 하루 전·당일에 알림을 보냅니다. 매주 월요일엔 지난주 리포트 알림도 옵니다. 앱이 꺼져 있어도 옵니다.';
   notiState=async function(){try{const p=await P.LocalNotifications.checkPermissions();$('notiState').textContent=p.display==='granted'?'켜짐':'꺼짐';$('notiBtn').hidden=p.display==='granted'}catch(e){$('notiState').textContent='확인 불가'}};
