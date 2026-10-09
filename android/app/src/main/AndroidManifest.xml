@@ -50,4 +50,7 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 시간 정한 할일 알람을 정확한 시간에 (Android 12 이하: SCHEDULE_EXACT_ALARM, 13 이상: USE_EXACT_ALARM 자동 허용) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 </manifest>
