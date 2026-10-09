@@ -189,6 +189,24 @@ button:focus-visible,.fbtn:focus-visible{outline:2px solid var(--ink);outline-of
 .witem.over .wb{color:var(--bad)}
 .witem.done{opacity:.6}.witem.done .t{text-decoration:line-through}
 .witem.skip{opacity:.5;background:transparent;border-left-style:dashed}
+/* 오른쪽 끝 완료 체크박스 */
+.cbx{flex:none;width:28px;height:28px;padding:0;border-radius:8px;border:2px solid var(--line);background:var(--paper);color:transparent;font:700 .95rem/1 var(--f-body);display:grid;place-items:center;cursor:pointer}
+.cbx.on{background:var(--good);border-color:var(--good);color:var(--paper)}
+.task .row1 .cbx{margin-left:4px}
+.slice.done .t,.task.done .t{text-decoration:line-through;color:var(--muted)}
+.rmemo{color:var(--ink);opacity:.8}
+/* 리포트: 작게, 메모까지 보이게 (읽기 전용) */
+#v-report .card{padding:10px 12px;gap:6px}
+#v-report .kpi{padding:6px 8px}#v-report .kpi b{font-size:1.1rem}
+#v-report .emp-head b{font-size:.88rem}
+#v-report .rp-sec{font-size:.66rem;padding-top:2px}
+.rr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 8px;padding:5px 0;border-top:1px solid var(--line);font-size:.82rem;align-items:center}
+.rr .tt{display:flex;gap:5px;align-items:center;min-width:0}
+.rr .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.rr .st{font:600 .74rem var(--f-num);white-space:nowrap}
+.st.ok{color:var(--good)}.st.bad{color:var(--bad)}
+.rr .nt{grid-column:1/-1;font-size:.72rem;color:var(--muted);white-space:pre-wrap;line-height:1.35;overflow-wrap:anywhere}
+.rp-lock{font-size:.72rem;color:var(--muted)}
 .sm{font-size:.74rem;padding:4px 10px;border-radius:6px}
 .carry-box{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px;border-radius:10px;background:var(--warn-bg);color:var(--warn);font-size:.82rem}
 .carry-box b{font-weight:600}.carry-box button{margin-left:auto}
@@ -346,8 +364,16 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
     <h3 id="ocTitle"></h3>
     <span class="hint" id="ocInfo"></span>
     <label>이번만 다른 날로 옮기기<input id="ocDate" type="date"></label>
-    <div class="btns"><button id="ocMove">이 날로 옮기기</button><button class="plain" id="ocSkip">이번만 건너뛰기</button></div>
+    <div class="btns"><button id="ocDone">완료·메모</button><button class="plain" id="ocMove">이 날로 옮기기</button><button class="plain" id="ocSkip">이번만 건너뛰기</button></div>
     <div class="btns"><button class="plain" id="ocReset" hidden>원래대로</button><button class="ghost" id="ocEdit">반복 설정 바꾸기 (매주 전체)</button><button class="plain" id="ocClose" style="margin-left:auto">닫기</button></div>
+  </div>
+</div>
+<div class="sheet" id="rn" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="rnTitle">
+    <h3 id="rnTitle"></h3>
+    <span class="hint" id="rnInfo"></span>
+    <label>이번 내용 메모 (선택)<textarea id="rnText" placeholder="예: 이번 주는 북엔드 신제품 릴스 2편"></textarea></label>
+    <div class="btns"><button id="rnSave">완료로 저장</button><button class="plain" id="rnUndo" hidden>체크 해제</button><button class="plain" id="rnClose" style="margin-left:auto">닫기</button></div>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -458,16 +484,15 @@ function renderToday(sc){
   // per employee: tasks whose days include today, plus unfinished ones whose planned days already ended
   $('todayList').innerHTML=S.emps.length?S.emps.map(e=>{
     const c=colorOf(e);
-    const ids=((sc.byDay[e.id]||{})[t]||[]).slice();
-    S.tasks.filter(x=>has(x,e.id)&&num(x.prog)<100&&sc.byTask[x.id].finish<t).forEach(x=>ids.push(x.id));
-    const rows=ids.map(id=>{
-      const k=S.tasks.find(x=>x.id===id), info=sc.byTask[id], idx=info.days.indexOf(t), n=info.days.length, over=idx<0;
-      const step=over?'<span class="daystep" style="background:var(--bad-bg);color:var(--bad)">기간 초과</span>':n>1?`<span class="daystep">${idx+1}/${n}일차</span>`:'<span class="daystep">하루</span>';
-      return `<div class="slice" data-edit="${id}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span>${step}
-        <span class="sub">${over?'':stepsHTML(info.days,idx,c)}<span>마감 ${md(k.due)} · ${dday(k.due)}</span><span>진행 ${num(k.prog)}%</span>${withOthers(k,e.id)?`<span>${esc(withOthers(k,e.id))}</span>`:''}${info.late&&!over?'<span class="pill p-warn">마감 위험</span>':''}${k.ex?'<span class="tag">예시</span>':''}</span></div>`}).join('');
+    // 오늘 마감인 일만 (사용자 요청). 완료한 것도 체크된 채로 남김
+    const list=S.tasks.filter(x=>has(x,e.id)&&!x.rep&&!x.ongoing&&x.due===t).sort((a,b)=>(num(a.prog)>=100)-(num(b.prog)>=100)||b.pri-a.pri);
+    const ids=list.filter(x=>num(x.prog)<100).map(x=>x.id);
+    const rows=list.map(k=>{const dn=num(k.prog)>=100,est=estD(k),oth=withOthers(k,e.id);
+      return `<div class="slice ${dn?'done':''}" data-edit="${k.id}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span>${cbx(k)}
+        <span class="sub">${k.pri===3?'<span class="pill p-bad">매우 중요</span>':''}${est>1?`<span>예상 ${est}일</span>`:''}${oth?`<span>${esc(oth)}</span>`:''}${k.ex?'<span class="tag">예시</span>':''}</span></div>`}).join('');
     const on=[]; // 상시 업무는 주간·리포트에서만 보임
     const rp=S.tasks.filter(x=>x.rep&&has(x,e.id)&&occOn(x,t));
-    const rRows=rp.map(k=>{const dn=repDone(k,t);return `<div class="slice" data-occ="${k.id}|${t}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span><button class="rchk ${dn?'on':''}" data-rdone="${k.id}">${dn?'✓ 완료':'체크'}</button><span class="sub"><span>↻ ${repLabel(k.rep,k.start)}${origOf(k,t)!==t?` · 이번만 옮김 (원래 ${md(origOf(k,t))})`:''}</span></span></div>`}).join('');
+    const rRows=rp.map(k=>{const dn=repDone(k,t);return `<div class="slice ${dn?'done':''}" data-occ="${k.id}|${t}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span>${cbx(k,t)}<span class="sub"><span>↻ ${repLabel(k.rep,k.start)}${origOf(k,t)!==t?` · 이번만 옮김 (원래 ${md(origOf(k,t))})`:''}</span>${memoOf(k,t)?`<span class="rmemo">메모: ${esc(memoOf(k,t))}</span>`:''}</span></div>`}).join('');
     const oRows=on.map(k=>`<div class="slice" data-edit="${k.id}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span><span class="daystep" style="background:var(--soft);color:var(--muted)">상시</span><span class="sub"><span>진행 ${num(k.prog)}%</span></span></div>`).join('');
     return `<section class="card" style="--c:${c}"><div class="emp-head"><span class="dot"></span><b>${esc(e.name)}</b><span class="load">오늘 ${ids.length}건${rp.length?` · 반복 ${rp.length}`:''}${on.length?` · 상시 ${on.length}`:''}</span></div>
       ${rows||(on.length||rp.length?'':'<div class="empty">오늘 할 일이 없습니다</div>')}${rp.length?`<div class="rp-sec">반복 업무</div><div>${rRows}</div>`:''}${on.length?`<div class="rp-sec">상시 업무</div><div>${oRows}</div>`:''}</section>`}).join('')
@@ -481,8 +506,7 @@ let wkSel=null;
 // 그날 직원별 할일: 일반(몇 일차), 오늘이면 기간 초과, 반복(↻)
 function dayItems(sc,d){const t=TODAY();
   return S.emps.map(e=>{const items=[];
-    ((sc.byDay[e.id]||{})[d]||[]).forEach(id=>{const k=S.tasks.find(x=>x.id===id),info=sc.byTask[id];items.push({k,kind:'task',i:info.days.indexOf(d),n:info.days.length,late:info.late})});
-    if(d===t)S.tasks.filter(x=>has(x,e.id)&&!x.rep&&!x.ongoing&&num(x.prog)<100&&sc.byTask[x.id]&&sc.byTask[x.id].finish<t).forEach(k=>items.push({k,kind:'over'}));
+    S.tasks.filter(x=>has(x,e.id)&&!x.rep&&!x.ongoing&&x.due===d).sort((a,b)=>(num(a.prog)>=100)-(num(b.prog)>=100)).forEach(k=>items.push({k,kind:'task',done:num(k.prog)>=100}));
     S.tasks.filter(k=>k.rep&&has(k,e.id)&&(occOn(k,d)||isSkip(k,d))).forEach(k=>items.push({k,kind:'rep',skip:isSkip(k,d),done:repDone(k,d)}));
     return {e,items}}).filter(x=>x.items.length)}
 function renderWeek(sc){
@@ -496,9 +520,9 @@ function renderWeek(sc){
   const g=dayItems(sc,wkSel),cnt=g.reduce((s,v)=>s+v.items.filter(i=>!i.skip).length,0);
   $('wkDayLbl').textContent=`${md(wkSel)}${wkSel===t?' · 오늘':''} · 할일 ${cnt}개`;
   const row=(x,e)=>{const k=x.k,oth=withOthers(k,e.id);
-    if(x.kind==='rep')return `<div class="witem ${x.done?'done':''} ${x.skip?'skip':''}" data-occ="${k.id}|${wkSel}"><span class="t">${esc(k.title)}</span><span class="wb">${x.skip?'건너뜀':x.done?'✓ 완료':'↻ 반복'}</span><span class="sub">${esc(repLabel(k.rep,k.start))}${oth?' · '+esc(oth):''}</span></div>`;
-    const badge=x.kind==='over'?'기간 초과':x.n>1?`${x.i+1}/${x.n}일차`:'하루';
-    return `<div class="witem ${x.kind==='over'?'over':''} ${x.late?'late':''}" data-edit="${k.id}"><span class="t">${esc(k.title)}</span><span class="wb">${badge}</span><span class="sub">마감 ${md(k.due)}${k.due===wkSel?' · 이날 마감':''} · 진행 ${num(k.prog)}%${oth?' · '+esc(oth):''}</span></div>`};
+    if(x.kind==='rep')return `<div class="witem ${x.done?'done':''} ${x.skip?'skip':''}" data-occ="${k.id}|${wkSel}"><span class="t">${esc(k.title)}</span><span class="wb">${x.skip?'건너뜀':x.done?'✓ 완료':'↻ 반복'}</span><span class="sub">${esc(repLabel(k.rep,k.start))}${oth?' · '+esc(oth):''}${memoOf(k,wkSel)?' · 메모: '+esc(memoOf(k,wkSel)):''}</span></div>`;
+    const badge=x.done?'✓ 완료':k.pri===3?'매우 중요':k.pri===2?'높음':'',est=estD(k);
+    return `<div class="witem ${x.done?'done':''}" data-edit="${k.id}"><span class="t">${esc(k.title)}</span>${badge?`<span class="wb">${badge}</span>`:'<span></span>'}<span class="sub">이날 마감${est>1?` · 예상 ${est}일`:''}${oth?' · '+esc(oth):''}</span></div>`};
   $('wkDay').innerHTML=g.length?g.map(v=>`<div class="wgrp" style="--c:${colorOf(v.e)}"><div class="wname"><span class="dot"></span>${esc(v.e.name)}<span class="hint">${v.items.length}개</span></div>${v.items.map(x=>row(x,v.e)).join('')}</div>`).join('')
     :`<div class="empty">${isWork(wkSel)?'이날은 할일이 없습니다':'쉬는 날입니다'}</div>`;
   const ord=id=>S.emps.findIndex(e=>e.id===id);
@@ -511,6 +535,11 @@ function renderWeek(sc){
 let filt='all';
 const sameDay=t=>!t.rep&&!t.ongoing&&t.due===t.start&&estD(t)===1;
 function nextOcc(t){let d=TODAY();for(let i=0;i<120;i++,d=add(d,1))if(occOn(t,d))return d;return null}
+// 완료 체크박스: 반복은 오늘 체크(메모 창), 나머지는 완료/취소
+function cbx(t,d){d=d||TODAY();
+  if(t.rep){if(!occOn(t,d))return '';const dn=repDone(t,d);return `<button class="cbx ${dn?'on':''}" data-rdone="${t.id}" data-rdate="${d}" aria-pressed="${dn}" aria-label="완료">✓</button>`}
+  const dn=num(t.prog)>=100;return `<button class="cbx ${dn?'on':''}" data-done="${t.id}" aria-pressed="${dn}" aria-label="완료">✓</button>`}
+const memoOf=(t,d)=>(t.rnote||{})[d]||'';
 function progUI(t){
   if(t.rep){const td=TODAY();if(occOn(t,td)){const dn=repDone(t,td);return `<div class="prog"><button data-rdone="${t.id}" aria-pressed="${dn}">${dn?'✓ 오늘 완료':'오늘 완료'}</button></div>`}
     const n=nextOcc(t);return `<div class="prog"><span class="hint">오늘은 없음${n?` · 다음 ${md(n)}`:''}</span></div>`}
@@ -528,9 +557,9 @@ function renderTasks(sc){
     const span=n?(n>1?`${md(info.days[0])} → ${md(info.finish)}`:`${md(info.days[0])} 하루`):'';
     const st=num(t.prog)>=100?'<span class="pill p-good">완료</span>':dn<0?'<span class="pill p-bad">마감 지남</span>':info.late?'<span class="pill p-warn">마감 위험</span>':dn<=1?'<span class="pill p-warn">'+dday(t.due)+'</span>':'';
     return `<div class="task ${num(t.prog)>=100?'done':''} ${hot(t)?'hot':''}">
-      <div class="row1"><span class="dot" style="--c:${colorOf(e)}"></span><span class="t" data-edit="${t.id}">${esc(t.title)}</span>${st}</div>
+      <div class="row1"><span class="dot" style="--c:${colorOf(e)}"></span><span class="t" data-edit="${t.id}">${esc(t.title)}</span>${st}${cbx(t)}</div>
       <div class="meta"><span>${esc(who(t)||'담당 없음')}</span>${t.rep?`<span class="tag">↻ ${repLabel(t.rep,t.start)}</span>`:t.ongoing?'<span class="tag">상시 업무</span>':`<span>마감 ${md(t.due)} ${dday(t.due)}</span><span>예상 ${estD(t)}일</span>`}${span?`<span>${span}</span>`:''}${t.pri===3?'<span class="pill p-bad">매우 중요</span>':['낮음','','높음'][t.pri]?`<span class="tag">${['낮음','','높음'][t.pri]}</span>`:''}${t.ex?'<span class="tag">예시</span>':''}${movedTag(t)}</div>
-      ${progUI(t)}
+      ${t.rep&&!occOn(t,TODAY())?`<span class="hint">오늘은 없음${nextOcc(t)?" · 다음 "+md(nextOcc(t)):""}</span>`:""}
     </div>`}).join(''):'<div class="empty">할일이 없습니다. 오른쪽 아래 + 할일로 추가하세요.</div>';
 }
 
@@ -569,45 +598,53 @@ function weekData(ws,we,asPast){
 }
 let rpOff=-1;
 const rpRange=()=>{const ws=add(monOf(TODAY()),7*rpOff);return [ws,add(ws,6)]};
+// ---------- 리포트 스냅샷: 지난 주는 처음 볼 때(또는 앱 열 때) 그대로 저장 → 이후 수정해도 안 바뀜 ----------
+function makeSnap(ws,we){const past=we<TODAY(),R=weekData(ws,we,past),until=past?we:TODAY();
+  const memos=t=>Object.keys(t.rnote||{}).filter(d=>d>=ws&&d<=we&&t.rnote[d]).sort().map(d=>[d,t.rnote[d]]);
+  const co=t=>!!(t.co&&t.co.length);
+  return {ws,we,at:Date.now(),k:[R.nDone,R.nOpen,R.nLate],
+    emps:R.emps.map(({e,done,open,ong,reps})=>({n:e.name,c:e.c,
+      done:done.map(t=>({t:t.title,late:t.doneAt>dueOf(t),d:t.doneAt,co:co(t),mv:t.moves||0,note:t.note||''})),
+      open:open.map(t=>({t:t.title,late:dueOf(t)<R.ref,due:t.due,co:co(t),mv:t.moves||0,note:t.note||''})),
+      reps:reps.map(t=>{const [ok,n]=repCount(t,ws,we,until);return {t:t.title,ok,n,m:memos(t),co:co(t)}}).filter(x=>x.n>0),
+      ong:ong.map(t=>({t:t.title,g:gain(t,ws,we),note:t.note||''}))}))}}
+function getSnap(ws,we){if(we>=TODAY())return makeSnap(ws,we);
+  S.reports=S.reports||{};if(!S.reports[ws]){S.reports[ws]=makeSnap(ws,we);store.set(K,S)} // 업로드는 다음 저장 때 같이 (동기화 덮어쓰기 방지)
+  return Object.assign({frozen:true},S.reports[ws])}
+function ensureLastSnap(){const ws=add(monOf(TODAY()),-7);if(!S.reports||!S.reports[ws])getSnap(ws,add(ws,6))}
 function renderReport(sc){
   sc=sc||schedule();
-  const [ws,we]=rpRange(),R=weekData(ws,we),at=R.past?we:TODAY();
+  const [ws,we]=rpRange(),P=getSnap(ws,we);
   const cl=carryList(ws,we,sc),tgt=carryTarget(we),where=tgt<=TODAY()?'이번 주로':'다음 주로';
   const capped=carryList(ws,we,sc,true).length-cl.length;
   $('rpLbl').textContent=`${md(ws)} – ${md(we)}`+(rpOff===0?' · 이번 주':rpOff===-1?' · 지난주':'');
   $('rpNext').disabled=rpOff>=0;
-  $('rpKpi').innerHTML=[['완료',R.nDone,'good'],['진행 중',R.nOpen,'acc'],['마감 지남',R.nLate,R.nLate?'bad':'']]
-    .map(([l,v,c])=>`<div class="kpi ${c}"><b>${v}</b><span>${l}</span></div>`).join('');
+  $('rpKpi').innerHTML=[['완료',P.k[0],'good'],['진행 중',P.k[1],'acc'],['마감 지남',P.k[2],P.k[2]?'bad':'']]
+    .map(([l,v,c])=>`<div class="kpi ${c}"><b>${v}</b><span>${l}</span></div>`).join('')
+    +`<div class="rp-lock" style="grid-column:1/-1">${P.frozen?`확정된 리포트 · ${md(fmt(new Date(P.at)))} 기준 · 수정할 수 없습니다`:'이번 주는 진행 중 · 주가 끝나면 확정됩니다'}</div>`;
   $('rpCarry').innerHTML=(cl.length?`<button class="carry-btn" data-carryall>못 끝낸 일 ${cl.length}건 ${where} 넘기기</button>`:'')
-    +(capped?`<div class="hint" style="color:var(--bad);margin-top:6px">${capped}건은 3번 넘겨서 더 못 넘깁니다. 눌러서 날짜를 직접 정해주세요.</div>`:'');
-  const legacy=S.tasks.filter(t=>num(t.prog)>=100&&!t.doneAt).length;
-  $('rpNote').textContent=legacy?`완료일 기록 전에 끝난 ${legacy}건은 빠짐`:'';
-  const title=t=>`<span class="tt"><span class="t">${esc(t.title)}</span>${t.co&&t.co.length?'<span class="tag">함께</span>':''}${t.moves?`<span class="mvb mv${Math.min(t.moves,3)}">${t.moves}번 밀림</span>`:''}</span>`;
-  $('rpList').innerHTML=R.emps.length?R.emps.map(({e,done,open,ong,reps})=>{
-    const until=R.past?we:TODAY(),rr=reps.map(t=>[t,...repCount(t,ws,we,until)]).filter(x=>x[2]>0);
-    const dRows=done.map(t=>{const late=t.doneAt>dueOf(t);
-      return `<div class="rp-row" data-edit="${t.id}">${title(t)}<span class="st ${late?'bad':'ok'}">${late?'늦게 완료':'✓ 완료'}</span></div>`}).join('');
-    const oRows=open.map(t=>{const late=dueOf(t)<R.ref;
-      return `<div class="rp-row" data-edit="${t.id}">${title(t)}<span class="st ${late?'bad':''}">${late?'지남':progAt(t,at)+'%'}</span></div>`}).join('');
-    return `<section class="card" style="--c:${colorOf(e)}">
-      <div class="emp-head"><span class="dot"></span><b>${esc(e.name)}</b><span class="load">완료 ${done.length} · 진행 ${open.length}</span></div>
-      ${done.length?`<div class="rp-sec">완료</div><div>${dRows}</div>`:''}
-      ${open.length?`<div class="rp-sec">진행 중</div><div>${oRows}</div>`:''}
-      ${rr.length?`<div class="rp-sec">반복 업무</div><div>${rr.map(([t,ok,n])=>`<div class="rp-row" data-edit="${t.id}">${title(t)}<span class="st ${ok===n?'ok':R.past?'bad':''}">${ok}/${n}회</span></div>`).join('')}</div>`:''}
-      ${ong.length?`<div class="rp-sec">상시 업무</div><div>${ong.map(t=>{const g=gain(t,ws,we);return `<div class="rp-row" data-edit="${t.id}">${title(t)}<span class="st ${g>0?'ok':''}">${g>0?`+${g}%p`:'그대로'}</span></div>`}).join('')}</div>`:''}
-      ${done.length+open.length+ong.length+rr.length?'':'<div class="empty">기록 없음</div>'}
-    </section>`}).join(''):'<section class="card"><div class="empty">직원 탭에서 직원을 먼저 추가하세요.</div></section>';
+    +(capped?`<div class="hint" style="color:var(--bad);margin-top:6px">${capped}건은 3번 넘겨서 더 못 넘깁니다. 할일 탭에서 날짜를 직접 정해주세요.</div>`:'');
+  $('rpNote').textContent='';
+  const tt=x=>`<span class="tt"><span class="t">${esc(x.t)}</span>${x.co?'<span class="tag">함께</span>':''}${x.mv?`<span class="mvb mv${Math.min(x.mv,3)}">${x.mv}번 밀림</span>`:''}</span>`;
+  const nt=v=>v?`<span class="nt">${esc(v)}</span>`:'';
+  $('rpList').innerHTML=P.emps.length?P.emps.map(v=>{const tot=v.done.length+v.open.length+v.reps.length;
+    return `<section class="card" style="--c:${colorOf(v)}">
+      <div class="emp-head"><span class="dot"></span><b>${esc(v.n)}</b><span class="load">완료 ${v.done.length} · 진행 ${v.open.length}</span></div>
+      ${v.done.length?`<div class="rp-sec">완료</div><div>${v.done.map(x=>`<div class="rr">${tt(x)}<span class="st ${x.late?'bad':'ok'}">${x.late?'늦게 완료':'✓ 완료'}</span>${nt(x.note)}</div>`).join('')}</div>`:''}
+      ${v.open.length?`<div class="rp-sec">진행 중</div><div>${v.open.map(x=>`<div class="rr">${tt(x)}<span class="st ${x.late?'bad':''}">${x.late?'지남':'진행 중'}</span>${nt(x.note)}</div>`).join('')}</div>`:''}
+      ${v.reps.length?`<div class="rp-sec">반복 업무</div><div>${v.reps.map(x=>`<div class="rr">${tt(x)}<span class="st ${x.ok===x.n?'ok':P.frozen?'bad':''}">${x.ok}/${x.n}회</span>${x.m.map(([d,m])=>nt(md(d)+' · '+m)).join('')}</div>`).join('')}</div>`:''}
+      ${tot?'':'<div class="empty">기록 없음</div>'}
+    </section>`}).join(''):'<section class="card"><div class="empty">직원을 먼저 추가하세요.</div></section>';
 }
 function rpText(){
-  const [ws,we]=rpRange(),R=weekData(ws,we),at=R.past?we:TODAY(),L=[];
-  L.push(`LIBFRIEND 주간 리포트 ${md(ws)}~${md(we)}`);
-  L.push(`완료 ${R.nDone}건 · 진행 중 ${R.nOpen}건 · 마감 지남 ${R.nLate}건`+(R.rate==null?'':` · 마감 준수 ${R.rate}%`));
-  R.emps.forEach(({e,done,open,ong,reps})=>{
-    L.push('',`[${e.name}] 완료 ${done.length} · 진행 중 ${open.length}`);
-    done.forEach(t=>{const lb=diff(dueOf(t),t.doneAt);L.push(`  ✓ ${t.title} (${md(t.doneAt)} 완료${lb>0?`, ${lb}일 늦음`:''})`)});
-    reps.forEach(t=>{const [ok,n]=repCount(t,ws,we,R.past?we:TODAY());if(n)L.push(`  ↻ ${t.title} ${ok}/${n}회`)});
-    ong.forEach(t=>{const g=gain(t,ws,we);L.push(`  · [상시] ${t.title} ${progAt(t,at)}%${g>0?` (+${g}%p)`:' (그대로)'}`)});
-    open.forEach(t=>L.push(`  - ${t.title} ${progAt(t,at)}% (마감 ${md(t.due)}${dueOf(t)<R.ref?', 마감 지남':''}${t.moves?`, 넘김 ${t.moves}회`:''})`));
+  const [ws,we]=rpRange(),P=getSnap(ws,we),L=[];
+  L.push(`LIBFRIEND 주간 리포트 ${md(ws)}~${md(we)}${P.frozen?' (확정)':' (진행 중)'}`);
+  L.push(`완료 ${P.k[0]}건 · 진행 중 ${P.k[1]}건 · 마감 지남 ${P.k[2]}건`);
+  P.emps.forEach(v=>{
+    L.push('',`[${v.n}] 완료 ${v.done.length} · 진행 중 ${v.open.length}`);
+    v.done.forEach(x=>{L.push(`  ✓ ${x.t}${x.late?' (늦게 완료)':''}`);if(x.note)L.push(`      메모: ${x.note}`)});
+    v.reps.forEach(x=>{L.push(`  ↻ ${x.t} ${x.ok}/${x.n}회`);x.m.forEach(([d,m])=>L.push(`      ${md(d)}: ${m}`))});
+    v.open.forEach(x=>{L.push(`  - ${x.t} (마감 ${md(x.due)}${x.late?', 마감 지남':''}${x.mv?`, 넘김 ${x.mv}회`:''})`);if(x.note)L.push(`      메모: ${x.note}`)});
   });
   return L.join('\n');
 }
@@ -658,6 +695,7 @@ $('occ').addEventListener('click',e=>{if(e.target===$('occ'))closeOcc()});
 $('ocMove').addEventListener('click',()=>{const t=ocT,nd=$('ocDate').value;if(!t||!nd)return;const o=origOf(t,ocD);
   t.rmove=t.rmove||{};t.rskip=t.rskip||{};delete t.rskip[o];if(nd===o)delete t.rmove[o];else t.rmove[o]=nd;
   if(t.rdone&&t.rdone[ocD]&&ocD!==nd){delete t.rdone[ocD];t.rdone[nd]=1}
+  if(t.rnote&&t.rnote[ocD]&&ocD!==nd){t.rnote[nd]=t.rnote[ocD];delete t.rnote[ocD]}
   save();closeOcc();render();toast(`이번만 ${md(nd)}로 옮겼습니다`)});
 $('ocSkip').addEventListener('click',()=>{const t=ocT;if(!t)return;const o=origOf(t,ocD);t.rskip=t.rskip||{};t.rskip[o]=1;if(t.rmove)delete t.rmove[o];if(t.rdone)delete t.rdone[ocD];
   save();closeOcc();render();toast(`${md(o)}은 이번만 건너뜁니다`)});
@@ -720,7 +758,7 @@ $('cloudCopy').addEventListener('click',()=>{const t=CM.code;const fb=()=>{const
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(()=>toast('코드를 복사했습니다'),fb);else fb()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)cloudPull()});
 setInterval(()=>{if(!document.hidden)cloudPull()},20000);
-setTimeout(()=>{cloudUI();cloudPull()},300);
+setTimeout(async()=>{cloudUI();try{await cloudPull()}catch(e){}ensureLastSnap()},300);
 
 // ---------- 자주 하는 일 (설정에서 등록 → 할일 추가 때 목록) ----------
 const presets=()=>S.presets||(S.presets=[]);
@@ -762,6 +800,20 @@ document.addEventListener('click',e=>{
     openSheet(null);if($('sheet').hidden)return;pendingLater=x.id;titleManual=true;
     $('fPreset').hidden=true;$('fTitle').hidden=false;$('fTitle').value=x.title;$('fManual').textContent='목록에서 고르기';$('shTitle').textContent='추후 할일 → 할일로';preview()}
 });
+
+// ---------- 반복 업무 체크 → 메모 ----------
+let rnT=null,rnD=null;
+function openRn(id,d){const t=S.tasks.find(x=>x.id===id);if(!t)return;rnT=t;rnD=d;const dn=repDone(t,d);
+  $('rnTitle').textContent=t.title;$('rnInfo').textContent=`${md(d)} · ↻ ${repLabel(t.rep,t.start)} · ${who(t)}`;
+  $('rnText').value=memoOf(t,d);$('rnUndo').hidden=!dn;$('rnSave').textContent=dn?'메모 저장':'완료로 저장';$('rn').hidden=false;setTimeout(()=>$('rnText').focus(),50)}
+function closeRn(){$('rn').hidden=true;rnT=null}
+$('rnClose').addEventListener('click',closeRn);
+$('rn').addEventListener('click',e=>{if(e.target===$('rn'))closeRn()});
+$('rnSave').addEventListener('click',()=>{const t=rnT;if(!t)return;const v=$('rnText').value.trim();
+  t.rdone=t.rdone||{};t.rdone[rnD]=1;t.rnote=t.rnote||{};if(v)t.rnote[rnD]=v;else delete t.rnote[rnD];
+  save();closeRn();render();toast(v?'완료 · 메모 저장':'완료했습니다')});
+$('rnUndo').addEventListener('click',()=>{const t=rnT;if(!t)return;if(t.rdone)delete t.rdone[rnD];save();closeRn();render();toast('체크를 해제했습니다')});
+$('ocDone').addEventListener('click',()=>{const t=ocT,d=ocD;closeOcc();if(t)openRn(t.id,d)});
 
 // ---------- render all ----------
 let cur='today';
@@ -864,7 +916,8 @@ $('fab').addEventListener('click',()=>openSheet());
 document.addEventListener('click',e=>{
   const cy=e.target.closest('[data-carry]');if(cy){doCarry([cy.dataset.carry]);return}
   const ca=e.target.closest('[data-carryall]');if(ca){const [ws,we]=rpRange();doCarry(carryList(ws,we,schedule()).map(t=>t.id));return}
-  const rdn=e.target.closest('[data-rdone]');if(rdn){toggleRep(rdn.dataset.rdone,TODAY());return}
+  const rdn=e.target.closest('[data-rdone]');if(rdn){openRn(rdn.dataset.rdone,rdn.dataset.rdate||TODAY());return}
+  const dne=e.target.closest('[data-done]');if(dne){const t=S.tasks.find(x=>x.id===dne.dataset.done);if(t){const was=num(t.prog)>=100;setProg(t,was?0:100);save();render();toast(was?'완료를 취소했습니다':'완료했습니다')}return}
   const oc=e.target.closest('[data-occ]');if(oc&&!e.target.closest('.sheet')){const [id,d]=oc.dataset.occ.split('|');openOcc(id,d);return}
   const wdy=e.target.closest('[data-wday]');if(wdy){wkSel=wdy.dataset.wday;render();return}
   const gr=e.target.closest('[data-goreport]');if(gr){rpOff=-1;show('report');return}
@@ -921,10 +974,7 @@ function widgetData(sc){
   for(let i=0;i<14;i++){
     const d=add(t,i),lines=[];let n=0;
     S.emps.forEach(e=>{
-      const ids=((sc.byDay[e.id]||{})[d]||[]).slice();
-      if(i===0)S.tasks.filter(x=>has(x,e.id)&&num(x.prog)<100&&sc.byTask[x.id].finish<t).forEach(x=>ids.push(x.id));
-      ids.forEach(id=>{const k=S.tasks.find(x=>x.id===id),info=sc.byTask[id],j=info.days.indexOf(d),m=info.days.length;n++;
-        lines.push(`${e.name} · ${k.title}`+(j<0?' (기간 초과)':m>1?` (${j+1}/${m})`:'')+(k.due===d?' · 오늘 마감':''))});
+      S.tasks.filter(x=>has(x,e.id)&&!x.rep&&!x.ongoing&&num(x.prog)<100&&x.due===d).forEach(k=>{n++;lines.push(`${e.name} · ${k.title}`)});
     });
     S.emps.forEach(e=>S.tasks.filter(k=>k.rep&&has(k,e.id)&&occOn(k,d)&&!repDone(k,d)).forEach(k=>{n++;lines.push(`${e.name} · ↻ ${k.title}`)}));
     days[d]={title:`${md(d)} · 할일 ${n}건`,lines};
