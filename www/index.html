@@ -273,6 +273,12 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
       <span class="hint">여기 등록한 일은 할일 추가할 때 목록에서 바로 고를 수 있습니다.</span>
     </section>
     <section class="card">
+      <h2>추후 할일 <span id="laterCnt"></span></h2>
+      <div class="pair"><input id="newLater" type="text" placeholder="생각난 일을 적어두세요" autocomplete="off"><button id="addLater">추가</button></div>
+      <div id="laterList"></div>
+      <span class="hint">할 수 있을 때 [할일로]를 누르면 담당·날짜만 정해서 바로 할일로 옮겨집니다.</span>
+    </section>
+    <section class="card">
       <h2>알림</h2>
       <div class="btns"><button id="notiBtn">알림 켜기</button><span class="hint" id="notiState"></span></div>
       <label id="alarmRow" hidden>매일 알림 시각<input id="alarmTime" type="time" value="09:00"></label>
@@ -532,7 +538,7 @@ function renderTasks(sc){
 function renderTeam(){
   $('empList').innerHTML=S.emps.length?S.emps.map((e,i)=>`<div class="emp-row"><span class="mv"><button class="plain" data-up="${i}" aria-label="위로" ${i===0?'disabled':''}>▲</button><button class="plain" data-down="${i}" aria-label="아래로" ${i===S.emps.length-1?'disabled':''}>▼</button></span><span class="dot" style="--c:${colorOf(e)}"></span><span class="n">${esc(e.name)}${e.ex?' <span class="tag">예시</span>':''}</span><span class="hint">${S.tasks.filter(t=>has(t,e.id)&&num(t.prog)<100).length}건 진행 중</span><button class="ghost" data-delemp="${e.id}">삭제</button></div>`).join(''):'<div class="empty">아직 직원이 없습니다</div>';
   // 근무 요일 설정 화면은 없앰 (저장된 근무 요일은 그대로 사용)
-  notiState();cloudUI();presetUI();
+  notiState();cloudUI();presetUI();laterUI();
 }
 
 // ---------- 주간 리포트 (지난주 월~일) ----------
@@ -741,6 +747,22 @@ document.addEventListener('click',e=>{
   const u=e.target.closest('[data-pup],[data-pdown]');if(u&&!u.disabled){const ps=presets(),i=+(u.dataset.pup??u.dataset.pdown),j=u.dataset.pup!=null?i-1:i+1;if(j>=0&&j<ps.length){[ps[i],ps[j]]=[ps[j],ps[i]];save();render()}}
 });
 
+// ---------- 추후 할일 (생각날 때 적어두고 나중에 할일로 옮기기) ----------
+let pendingLater=null;
+const laterL=()=>S.later||(S.later=[]);
+function laterUI(){const L=laterL();$('laterCnt').textContent=L.length?L.length+'개':'';
+  $('laterList').innerHTML=L.length?L.map(x=>`<div class="emp-row"><span class="n">${esc(x.title)}<span class="hint" style="display:block">${md(x.at)} 적음</span></span><button class="sm" data-tolater="${x.id}">할일로</button><button class="ghost sm" data-dellater="${x.id}">삭제</button></div>`).join(''):'<div class="empty">적어둔 일이 없습니다</div>'}
+function addLater(){const v=$('newLater').value.trim();if(!v){$('newLater').focus();return}
+  laterL().unshift({id:'l'+Date.now(),title:v,at:TODAY()});$('newLater').value='';save();render();toast('추후 할일에 적었습니다')}
+$('addLater').addEventListener('click',addLater);
+$('newLater').addEventListener('keydown',e=>{if(e.key==='Enter')addLater()});
+document.addEventListener('click',e=>{
+  const d=e.target.closest('[data-dellater]');if(d){const b=d;if(!b.dataset.arm){b.dataset.arm=1;b.textContent='한 번 더';return}S.later=laterL().filter(x=>x.id!==b.dataset.dellater);save();render();return}
+  const t=e.target.closest('[data-tolater]');if(t){const x=laterL().find(y=>y.id===t.dataset.tolater);if(!x)return;
+    openSheet(null);if($('sheet').hidden)return;pendingLater=x.id;titleManual=true;
+    $('fPreset').hidden=true;$('fTitle').hidden=false;$('fTitle').value=x.title;$('fManual').textContent='목록에서 고르기';$('shTitle').textContent='추후 할일 → 할일로';preview()}
+});
+
 // ---------- render all ----------
 let cur='today';
 function render(){
@@ -783,7 +805,7 @@ function openSheet(id){
   $('fDel').hidden=!t;delete $('fDel').dataset.arm;$('fDel').textContent='삭제';
   $('sheet').hidden=false;preview();setTimeout(()=>{if(!$('fTitle').hidden)$('fTitle').focus()},50);
 }
-function closeSheet(){$('sheet').hidden=true;editId=null}
+function closeSheet(){$('sheet').hidden=true;editId=null;pendingLater=null}
 let repDays=[];
 function repOptions(){const s=$('fStart').value||TODAY(),x=parse(s),cur=$('fRep').value||'none';
   $('fRep').innerHTML=[['none','반복 안함'],['daily','매일 (근무일)'],['weekly',`매주 ${DOW[x.getDay()]}요일`],['weekdays','주중 매일(월-금)'],['monthly',`매월 ${x.getDate()}일`],['custom','맞춤 (요일 고르기)']].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
@@ -826,7 +848,8 @@ $('fSave').addEventListener('click',()=>{
   const data={title,emp:selEmps[0],co:selEmps.slice(1),pri:+$('fPri').value,start,due,ongoing:ongoing?1:0,rep:isRep?{type:rp,days:rp==='custom'?repDays.slice():[]}:null,est:(ongoing||isRep||sameDay)?1:Math.max(1,Math.round(num($('fEst').value))||1),note:$('fNote').value};
   if(editId){Object.assign(S.tasks.find(x=>x.id===editId),data,{ex:0})}
   else S.tasks.push({id:'t'+Date.now(),prog:0,created:Date.now(),hist:[[TODAY(),0]],...data});
-  save();closeSheet();render();toast(editId?'수정했습니다':'추가했습니다');
+  const fromLater=!editId&&pendingLater;if(fromLater)S.later=(S.later||[]).filter(x=>x.id!==pendingLater);
+  save();closeSheet();render();toast(editId?'수정했습니다':fromLater?'할일로 옮겼습니다':'추가했습니다');
 });
 $('fCancel').addEventListener('click',closeSheet);
 $('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))closeSheet()});
