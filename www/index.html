@@ -157,6 +157,8 @@ button:focus-visible,.fbtn:focus-visible{outline:2px solid var(--ink);outline-of
 .emp-row .mv{display:flex;gap:4px}.emp-row .mv button{padding:4px 8px;font-size:.7rem;line-height:1}.emp-row .mv button:disabled{opacity:.3;cursor:default}
 .task.hot{background:var(--bad-bg);border-radius:10px;padding:10px;border-top:0;margin:4px 0}
 .task.hot .pill.p-bad{background:var(--paper)}
+.cloud{font-size:.72rem;color:var(--muted)}.cloud.ok{color:var(--good)}.cloud.bad{color:var(--bad)}
+#cloudCode{font-family:var(--f-num);letter-spacing:.04em}
 .sm{font-size:.74rem;padding:4px 10px;border-radius:6px}
 .carry-box{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px;border-radius:10px;background:var(--warn-bg);color:var(--warn);font-size:.82rem}
 .carry-box b{font-weight:600}.carry-box button{margin-left:auto}
@@ -174,7 +176,7 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
 <div class="wrap">
   <header>
     <h1>LIBFRIEND 팀 할일</h1>
-    <span class="date" id="todayLbl"></span>
+    <span class="date"><span id="cloudDot" class="cloud" hidden></span> <span id="todayLbl"></span></span>
   </header>
 
   <!-- 오늘 -->
@@ -238,8 +240,23 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
       <span class="hint" id="notiHelp">마감 오늘·내일, 마감을 넘길 것 같은 일을 하루 한 번 알려줍니다. 웹 페이지에서는 이 화면이 열려 있을 때만 알림이 옵니다. 갤럭시 앱(APK)에서는 앱이 꺼져 있어도 정해진 시각에 알림이 오고, 홈 화면 위젯도 쓸 수 있습니다.</span>
     </section>
     <section class="card">
+      <h2>폰 ↔ 컴퓨터 동기화</h2>
+      <div id="cloudOff">
+        <span class="hint">폰과 컴퓨터에 <b>같은 동기화 코드</b>를 넣으면 저장할 때마다 자동으로 맞춰집니다. 처음엔 <b>데이터가 있는 기기</b>에서 [새 코드 만들기] → [연결]을 먼저 하세요.</span>
+        <div class="pair" style="margin-top:8px"><input id="cloudIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="동기화 코드 (20자 이상)"><button id="cloudGo">연결</button></div>
+        <div class="btns" style="margin-top:8px"><button class="plain sm" id="cloudNew">새 코드 만들기</button></div>
+      </div>
+      <div id="cloudOn" hidden>
+        <div class="btns"><span class="hint" id="cloudState"></span></div>
+        <div class="btns" style="margin-top:6px"><span class="hint">코드</span><span id="cloudCode" class="hint"></span><button class="plain sm" id="cloudShow">보기</button><button class="plain sm" id="cloudCopy">복사</button></div>
+        <div class="btns" style="margin-top:8px"><button class="sm" id="cloudNow">지금 동기화</button><button class="plain sm" id="cloudPushAll">이 기기 데이터로 덮어쓰기</button><button class="danger sm" id="cloudOffBtn" style="margin-left:auto">연결 끊기</button></div>
+      </div>
+      <span class="hint">코드를 아는 사람은 이 데이터를 볼 수 있으니 대표님만 보관하세요.</span>
+    </section>
+    <section class="card">
       <h2>데이터</h2>
-      <div class="btns"><button class="plain" id="clearEx">예시 데이터 지우기</button></div>
+      <div class="btns"><button class="plain" id="clearEx">예시 데이터 지우기</button><button class="plain" id="exBtn">데이터 복사</button><button class="plain" id="imBtn">데이터 붙여넣기</button></div>
+      <textarea id="imTxt" hidden placeholder="다른 기기에서 [데이터 복사]한 내용을 여기에 붙여넣고 [데이터 붙여넣기]를 한 번 더 누르세요. 이 기기 데이터는 덮어써집니다."></textarea>
       <span class="hint">데이터는 이 기기 브라우저에만 저장됩니다.</span>
     </section>
   </div>
@@ -333,7 +350,7 @@ function migrate(){const o=store.get('lf_team_tasks_v1',null);if(!o)return null;
   o.tasks.forEach(t=>{const e=o.emps.find(x=>x.id===t.emp),cap=e&&e.cap>0?e.cap:8;t.est=Math.max(1,Math.ceil(t.unit==='d'?+t.est:(+t.est)/cap));delete t.unit});
   o.emps.forEach(e=>delete e.cap);return o}
 let S=store.get(K,null)||migrate()||sample();
-const save=()=>{store.set(K,S);if(window.__lfSync)window.__lfSync()};
+const save=()=>{store.set(K,S);if(window.__lfSync)window.__lfSync();if(window.__lfCloud)window.__lfCloud()};
 const empOf=id=>S.emps.find(e=>e.id===id);
 const colorOf=e=>`var(--e${(e?e.c:0)%6})`;
 const isWork=s=>S.workdays.includes(parse(s).getDay());
@@ -469,7 +486,7 @@ function renderTasks(sc){
 function renderTeam(){
   $('empList').innerHTML=S.emps.length?S.emps.map((e,i)=>`<div class="emp-row"><span class="mv"><button class="plain" data-up="${i}" aria-label="위로" ${i===0?'disabled':''}>▲</button><button class="plain" data-down="${i}" aria-label="아래로" ${i===S.emps.length-1?'disabled':''}>▼</button></span><span class="dot" style="--c:${colorOf(e)}"></span><span class="n">${esc(e.name)}${e.ex?' <span class="tag">예시</span>':''}</span><span class="hint">${S.tasks.filter(t=>has(t,e.id)&&num(t.prog)<100).length}건 진행 중</span><button class="ghost" data-delemp="${e.id}">삭제</button></div>`).join(''):'<div class="empty">아직 직원이 없습니다</div>';
   // 근무 요일 설정 화면은 없앰 (저장된 근무 요일은 그대로 사용)
-  notiState();
+  notiState();cloudUI();
 }
 
 // ---------- 주간 리포트 (지난주 월~일) ----------
@@ -596,6 +613,63 @@ $('ocReset').addEventListener('click',()=>{const t=ocT;if(!t)return;const o=orig
   save();closeOcc();render();toast('원래 일정으로 돌렸습니다')});
 $('ocEdit').addEventListener('click',()=>{const id=ocT&&ocT.id;closeOcc();if(id)openSheet(id)});
 
+// ---------- 폰 ↔ 컴퓨터 동기화 (Firebase Firestore REST, 코드 방식) ----------
+const FB={key:'AIzaSyAGZAWdDn0KnV5dFdcHdnb1K-dNIrZSwkQ',project:'libfriend-tasks'};
+const CK='lf_cloud';
+let CM=store.get(CK,{code:'',last:0,dirty:false,editAt:0,at:0,err:''}),cloudBusy=false,cloudShowCode=false,pushT=null;
+const cmSave=()=>store.set(CK,CM);
+const docUrl=c=>`https://firestore.googleapis.com/v1/projects/${FB.project}/databases/(default)/documents/sync/${encodeURIComponent(c)}?key=${FB.key}`;
+const payload=()=>{const o=Object.assign({},S);delete o.notified;return JSON.stringify(o)};
+async function fbGet(c){const r=await fetch(docUrl(c),{cache:'no-store'});
+  if(r.status===404)return null;const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error((j.error&&j.error.message)||('HTTP '+r.status));
+  const f=j.fields||{};return {data:f.data&&f.data.stringValue,updated:+((f.updated&&f.updated.integerValue)||0)}}
+async function fbPut(c,data,updated){const r=await fetch(docUrl(c),{method:'PATCH',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({fields:{data:{stringValue:data},updated:{integerValue:String(updated)},device:{stringValue:NATIVE_HINT}}})});
+  if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error((j.error&&j.error.message)||('HTTP '+r.status))}}
+const NATIVE_HINT=(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())?'phone':'web';
+function applyRemote(r){try{const o=JSON.parse(r.data);if(!o||!Array.isArray(o.emps)||!Array.isArray(o.tasks))return false;
+  o.notified=S.notified||{};S=o;store.set(K,S);CM.last=r.updated;CM.dirty=false;cmSave();
+  if(window.__lfSync)window.__lfSync();render();return true}catch(e){return false}}
+function cloudErr(e){CM.err=String(e&&e.message||e);cmSave();cloudUI()}
+async function cloudPush(force){if(!CM.code||cloudBusy)return;cloudBusy=true;
+  try{const t=force?Date.now():(CM.editAt||Date.now());await fbPut(CM.code,payload(),t);CM.last=t;CM.dirty=false;CM.at=Date.now();CM.err='';cmSave()}
+  catch(e){cloudErr(e)}finally{cloudBusy=false;cloudUI()}}
+async function cloudPull(){if(!CM.code||cloudBusy)return;cloudBusy=true;
+  try{const r=await fbGet(CM.code);CM.at=Date.now();CM.err='';
+    if(!r){cloudBusy=false;await cloudPush(true);return}
+    if(r.updated>CM.last){if(CM.dirty&&CM.editAt>r.updated){cloudBusy=false;await cloudPush();return}applyRemote(r)}
+    else if(CM.dirty){cloudBusy=false;await cloudPush();return}
+    cmSave()}
+  catch(e){cloudErr(e)}finally{cloudBusy=false;cloudUI()}}
+window.__lfCloud=()=>{if(!CM.code)return;CM.dirty=true;CM.editAt=Date.now();cmSave();clearTimeout(pushT);pushT=setTimeout(()=>cloudPush(),1200)};
+function hhmm(ms){if(!ms)return '-';const d=new Date(ms);return pad(d.getHours())+':'+pad(d.getMinutes())}
+function cloudUI(){const on=!!CM.code,dot=$('cloudDot');
+  dot.hidden=!on;dot.className='cloud '+(CM.err?'bad':'ok');dot.textContent=CM.err?'☁ 동기화 오류':'☁ '+hhmm(CM.at);
+  if(!$('cloudOff'))return;$('cloudOff').hidden=on;$('cloudOn').hidden=!on;if(!on)return;
+  $('cloudState').innerHTML=CM.err?`<b style="color:var(--bad)">연결 실패</b> · ${esc(CM.err)}`:`<b style="color:var(--good)">연결됨</b> · 마지막 동기화 ${hhmm(CM.at)}${CM.dirty?' · 올리는 중':''}`;
+  $('cloudCode').textContent=cloudShowCode?CM.code:CM.code.slice(0,4)+'••••••••'}
+function newCode(){const a='abcdefghjkmnpqrstuvwxyz23456789',b=new Uint32Array(24);crypto.getRandomValues(b);return Array.from(b,x=>a[x%a.length]).join('')}
+$('cloudNew').addEventListener('click',()=>{$('cloudIn').value=newCode();toast('새 코드를 만들었습니다. [연결]을 누르세요')});
+$('cloudGo').addEventListener('click',async()=>{const c=$('cloudIn').value.trim();if(c.length<20){toast('코드는 20자 이상이어야 합니다');return}
+  CM={code:c,last:0,dirty:false,editAt:0,at:0,err:''};cmSave();cloudBusy=true;
+  try{const r=await fbGet(c);cloudBusy=false;
+    if(r&&r.data){applyRemote(r);CM.at=Date.now();cmSave();toast('클라우드 데이터를 가져왔습니다')}
+    else{await cloudPush(true);if(!CM.err)toast('이 기기 데이터를 클라우드에 올렸습니다')}}
+  catch(e){cloudBusy=false;cloudErr(e);toast('연결 실패: '+e.message)}
+  cloudUI()});
+$('cloudNow').addEventListener('click',async()=>{await cloudPull();toast(CM.err?'동기화 실패':'동기화했습니다')});
+$('cloudPushAll').addEventListener('click',async()=>{const b=$('cloudPushAll');if(!b.dataset.arm){b.dataset.arm=1;b.textContent='한 번 더 누르면 덮어씀';return}
+  delete b.dataset.arm;b.textContent='이 기기 데이터로 덮어쓰기';await cloudPush(true);toast(CM.err?'실패':'이 기기 데이터로 덮어썼습니다')});
+$('cloudOffBtn').addEventListener('click',()=>{const b=$('cloudOffBtn');if(!b.dataset.arm){b.dataset.arm=1;b.textContent='한 번 더 누르면 끊기';return}
+  CM={code:'',last:0,dirty:false,editAt:0,at:0,err:''};cmSave();cloudShowCode=false;cloudUI();toast('동기화를 끊었습니다 (데이터는 이 기기에 남아 있음)')});
+$('cloudShow').addEventListener('click',()=>{cloudShowCode=!cloudShowCode;cloudUI()});
+$('cloudCopy').addEventListener('click',()=>{const t=CM.code;const fb=()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('코드를 복사했습니다')}catch(e){}a.remove()};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(()=>toast('코드를 복사했습니다'),fb);else fb()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)cloudPull()});
+setInterval(()=>{if(!document.hidden)cloudPull()},20000);
+setTimeout(()=>{cloudUI();cloudPull()},300);
+
 // ---------- render all ----------
 let cur='today';
 function render(){
@@ -714,6 +788,11 @@ $('newEmp').addEventListener('keydown',e=>{if(e.key==='Enter')addEmp()});
 function addEmp(){const n=$('newEmp').value.trim();if(!n){$('newEmp').focus();return}
   const used=S.emps.map(e=>e.c);let c=0;while(used.includes(c)&&c<6)c++;
   S.emps.push({id:'e'+Date.now(),name:n,c:c%6});$('newEmp').value='';save();render();toast(n+' 추가');}
+$('exBtn').addEventListener('click',()=>{const t=JSON.stringify(S);const fb=()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('데이터를 복사했습니다')}catch(e){toast('복사 실패')}a.remove()};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(()=>toast('데이터를 복사했습니다'),fb);else fb()});
+$('imBtn').addEventListener('click',()=>{const ta=$('imTxt');if(ta.hidden){ta.hidden=false;ta.focus();return}
+  try{const o=JSON.parse(ta.value);if(!o||!Array.isArray(o.emps)||!Array.isArray(o.tasks))throw 0;S=o;save();ta.value='';ta.hidden=true;render();toast(`가져왔습니다 (직원 ${o.emps.length}명 · 할일 ${o.tasks.length}개)`)}
+  catch(e){toast('붙여넣은 내용이 올바르지 않습니다')}});
 $('clearEx').addEventListener('click',()=>{S.tasks=S.tasks.filter(t=>!t.ex);const keep=new Set(S.tasks.flatMap(members));S.emps=S.emps.filter(e=>!e.ex||keep.has(e.id));save();render();toast('예시를 지웠습니다')});
 $('wkPrev').addEventListener('click',()=>{wkStart=add(wkStart,-7);render()});
 $('wkNext').addEventListener('click',()=>{wkStart=add(wkStart,7);render()});
