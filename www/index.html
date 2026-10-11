@@ -27,7 +27,7 @@
 :root{--sat:var(--safe-area-inset-top,env(safe-area-inset-top,0px));--sab:var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px))}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-html,body{background:var(--bg)}
+html,body{background:var(--bg);overflow-x:hidden;max-width:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{margin:0;color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
 .wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:calc(14px + var(--sat)) 120px;display:flex;flex-direction:column;gap:14px}
 header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
@@ -45,8 +45,8 @@ h2{margin:0;font-size:.75rem;font-weight:500;color:var(--muted);letter-spacing:.
 .dot{width:10px;height:10px;border-radius:50%;flex:0 0 10px;background:var(--c,var(--accent))}
 
 /* alerts */
-.alerts{display:grid;gap:6px}
-.alert{display:flex;gap:8px;align-items:center;font-size:.85rem;padding:8px 10px;border-radius:8px}
+.alerts{display:grid;gap:6px;grid-template-columns:minmax(0,1fr)}
+.alert{display:flex;gap:8px;align-items:center;font-size:.85rem;padding:8px 10px;border-radius:8px;min-width:0}
 .alert b{white-space:nowrap;flex:none}
 header h1{white-space:nowrap}
 
@@ -100,7 +100,8 @@ table.wk{border-collapse:separate;border-spacing:4px;min-width:560px;width:100%}
 .prog button[aria-pressed=true]{background:var(--btn);border-color:var(--btn);color:var(--btn-ink)}
 
 /* forms */
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+input[type=date],input[type=time]{min-width:0;max-width:100%}
 .full{grid-column:1/-1}
 label{display:grid;gap:4px;font-size:.8rem;color:var(--muted);min-width:0}
 input,select,textarea{width:100%;font:500 .95rem var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;outline:none}
@@ -123,10 +124,12 @@ button:focus-visible,.fbtn:focus-visible{outline:2px solid var(--ink);outline-of
 .emp-row input{width:64px;padding:6px 8px;font-family:var(--f-num)}
 
 /* sheet */
-.sheet{position:fixed;inset:0;z-index:20;background:rgba(10,14,22,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(10,14,22,.45);display:flex;align-items:center;justify-content:center;padding:calc(12px + var(--sat)) 12px calc(12px + var(--sab))}
 .sheet[hidden]{display:none!important}
-.sheet .panel{background:var(--paper);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:16px 16px calc(18px + var(--sab));display:grid;gap:12px}
+.sheet .panel{background:var(--paper);width:100%;max-width:640px;max-height:100%;overflow:auto;border-radius:16px;padding:18px 16px;display:grid;gap:12px}
 .sheet h3{margin:0;font-size:1rem}
+@media (max-width:520px){body{font-size:14px}h1{font-size:1.1rem}.task .wd{font-size:.95rem}.emp-head b{font-size:.92rem}.alert{font-size:.8rem}nav.tabs button{font-size:.8rem;padding:12px 2px}.slice .sub,.task .meta{font-size:.72rem}}
+.tmrb{font:600 .72rem var(--f-body);padding:3px 9px;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--accent)}
 .rn-ask{display:grid;gap:12px}.rn-ask b{font-size:1.05rem}
 
 
@@ -216,10 +219,10 @@ button:focus-visible,.fbtn:focus-visible{outline:2px solid var(--ink);outline-of
 .fab{position:fixed;right:16px;bottom:calc(72px + var(--sab));z-index:11;border-radius:99px;padding:13px 18px;font-weight:700;box-shadow:0 6px 16px -6px rgba(70,80,140,.35)}
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--paper);border-top:1px solid var(--line);padding-bottom:var(--sab);display:flex;justify-content:center}
 nav.tabs div{display:flex;width:100%;max-width:640px}
-nav.tabs button{flex:1;border:0;border-radius:0;background:transparent;color:var(--muted);padding:13px 4px;font:500 .85rem var(--f-body)}
+nav.tabs button{flex:1;min-width:0;white-space:nowrap;border:0;border-radius:0;background:transparent;color:var(--muted);padding:13px 4px;font:500 .85rem var(--f-body)}
 nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(130px + var(--sab));background:var(--ink);color:var(--bg);font-size:.85rem;padding:8px 14px;border-radius:8px;z-index:30}
-@media (prefers-reduced-motion:no-preference){.sheet .panel{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}}
+@media (prefers-reduced-motion:no-preference){.sheet .panel{animation:up .18s ease-out}@keyframes up{from{transform:scale(.96);opacity:.6}to{transform:none;opacity:1}}}
 </style>
 </head><body>
 
@@ -488,6 +491,7 @@ function renderToday(sc){
     else if(info.late)al.push(['p-warn',`마감 넘길 위험 · 예상 끝 ${md(info.finish)}`,x,e]);
     else if(n===1)al.push(['p-warn','내일 마감',x,e]);
   });
+  const rk=a=>a[1]==='오늘 마감'?1:a[1]==='내일 마감'?2:a[0]==='p-bad'?0:3;al.sort((a,b)=>rk(a)-rk(b)||a[2].due.localeCompare(b[2].due));
   $('alerts').innerHTML=al.map(a=>`<div class="alert ${a[0]}" data-edit="${a[2].id}" style="cursor:pointer"><b>${a[1]}</b><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a[2].title)} · ${esc(who(a[2]))}</span></div>`).join('');
   // per employee: tasks whose days include today, plus unfinished ones whose planned days already ended
   $('todayList').innerHTML=S.emps.length?S.emps.map(e=>{
@@ -497,7 +501,7 @@ function renderToday(sc){
     const ids=list.filter(x=>num(x.prog)<100).map(x=>x.id);
     const rows=list.map(k=>{const dn=num(k.prog)>=100,est=estD(k),oth=withOthers(k,e.id);
       return `<div class="slice ${dn?'done':''}" data-edit="${k.id}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span>${cbx(k)}
-        <span class="sub">${k.time?`<span class="pill p-acc">${k.time}</span>`:''}${k.pri===3?'<span class="pill p-bad">매우 중요</span>':''}${est>1?`<span>예상 ${est}일</span>`:''}${oth?`<span>${esc(oth)}</span>`:''}${k.ex?'<span class="tag">예시</span>':''}</span></div>`}).join('');
+        <span class="sub">${k.time?`<span class="pill p-acc">${k.time}</span>`:''}${k.pri===3?'<span class="pill p-bad">매우 중요</span>':''}${est>1?`<span>예상 ${est}일</span>`:''}${oth?`<span>${esc(oth)}</span>`:''}${k.ex?'<span class="tag">예시</span>':''}${dn?'':`<button class="tmrb" data-tmr="${k.id}">내일로 넘기기</button>`}</span></div>`}).join('');
     const on=[]; // 상시 업무는 주간·리포트에서만 보임
     const rp=S.tasks.filter(x=>x.rep&&has(x,e.id)&&occOn(x,t));
     const rRows=rp.map(k=>{const dn=repDone(k,t);return `<div class="slice ${dn?'done':''}" data-occ="${k.id}|${t}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span>${cbx(k,t)}<span class="sub">${k.time?`<span class="pill p-acc">${k.time}</span>`:''}<span>↻ ${repLabel(k.rep,k.start)}${origOf(k,t)!==t?` · 이번만 옮김 (원래 ${md(origOf(k,t))})`:''}</span>${memoOf(k,t)?`<span class="rmemo">메모: ${esc(memoOf(k,t))}</span>`:''}</span></div>`}).join('');
@@ -562,7 +566,7 @@ function renderTasks(sc){
   $('taskCnt').textContent=list.length+'개';
   $('taskList').innerHTML=list.length?list.map(t=>{
     const e=empOf(t.emp),info=sc.byTask[t.id]||{days:[]},n=info.days.length,dn=diff(TODAY(),t.due);
-    const span=n?(n>1?`${md(info.days[0])} → ${md(info.finish)}`:`${md(info.days[0])} 당일`):'';
+    const span=t.rep||t.ongoing?'':t.start>=t.due?`${md(t.due)} 당일`:`${md(t.start)} → ${md(t.due)}`;
     const st=num(t.prog)>=100?'<span class="pill p-good">완료</span>':dn<0?'<span class="pill p-bad">마감 지남</span>':info.late?'<span class="pill p-warn">마감 위험</span>':dn<=1?'<span class="pill p-warn">'+dday(t.due)+'</span>':'';
     return `<div class="task ${num(t.prog)>=100?'done':''} ${hot(t)?'hot':''}">
       <div class="row1"><span class="dot" style="--c:${colorOf(e)}"></span><span class="t" data-edit="${t.id}">${esc(t.title)}</span>${st}${cbx(t)}</div>
@@ -687,6 +691,9 @@ function carry(t,start){
   const end=days[days.length-1]||start;
   t.start=start;t.est=left;if(t.due<end)t.due=end;
 }
+function toTomorrow(t){const nd=add(TODAY(),1);
+  if(!t.origDue)t.origDue=t.due;if(!t.origEst)t.origEst=estD(t);if(!t.origStart)t.origStart=t.start;t.moves=(t.moves||0)+1;
+  if(t.start>=t.due||t.start>nd)t.start=nd;t.due=nd}
 function doCarry(ids){const [,we]=rpRange(),st=carryTarget(we);
   ids.forEach(id=>{const t=S.tasks.find(x=>x.id===id);if(t)carry(t,st)});
   save();render();toast(`${ids.length}건을 ${md(st)}부터로 넘겼습니다`);
@@ -935,6 +942,7 @@ $('fab').addEventListener('click',()=>openSheet());
 document.addEventListener('click',e=>{
   const cy=e.target.closest('[data-carry]');if(cy){doCarry([cy.dataset.carry]);return}
   const ca=e.target.closest('[data-carryall]');if(ca){const [ws,we]=rpRange();doCarry(carryList(ws,we,schedule()).map(t=>t.id));return}
+  const tm=e.target.closest('[data-tmr]');if(tm){const t=S.tasks.find(x=>x.id===tm.dataset.tmr);if(t){toTomorrow(t);save();render();toast(`${md(t.due)}로 넘겼습니다`)}return}
   const rdn=e.target.closest('[data-rdone]');if(rdn){openRn(rdn.dataset.rdone,rdn.dataset.rdate||TODAY());return}
   const dne=e.target.closest('[data-done]');if(dne){const t=S.tasks.find(x=>x.id===dne.dataset.done);if(t){if(num(t.prog)>=100){setProg(t,0);delete t.dnote;save();render();toast('완료를 취소했습니다')}else openRn(t.id,TODAY())}return}
   const oc=e.target.closest('[data-occ]');if(oc&&!e.target.closest('.sheet')){const [id,d]=oc.dataset.occ.split('|');openOcc(id,d);return}
