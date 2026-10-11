@@ -221,6 +221,7 @@ nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--pape
 nav.tabs div{display:flex;width:100%;max-width:640px}
 nav.tabs button{flex:1;min-width:0;white-space:nowrap;border:0;border-radius:0;background:transparent;color:var(--muted);padding:13px 4px;font:500 .85rem var(--f-body)}
 nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
+.toast button{margin-left:10px;padding:3px 10px;font-size:.8rem;background:var(--accent-soft);color:var(--accent);border:0}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(130px + var(--sab));background:var(--ink);color:var(--bg);font-size:.85rem;padding:8px 14px;border-radius:8px;z-index:30}
 @media (prefers-reduced-motion:no-preference){.sheet .panel{animation:up .18s ease-out}@keyframes up{from{transform:scale(.96);opacity:.6}to{transform:none;opacity:1}}}
 </style>
@@ -362,7 +363,7 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
       <label class="full">메모<textarea id="fNote" placeholder="필요한 자료, 참고 링크 등"></textarea></label>
     </div>
     <div class="btns">
-      <button id="fSave">저장</button><button class="plain" id="fCancel">닫기</button>
+      <button id="fSave">저장</button><button class="plain" id="fCancel">닫기</button><button class="ghost" id="fUndoMv" hidden>넘기기 되돌리기</button>
       <button class="danger" id="fDel" style="margin-left:auto" hidden>삭제</button>
     </div>
   </div>
@@ -385,6 +386,13 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
     <div id="rnMemo" hidden>
     <label>특이사항<textarea id="rnText" placeholder="예: 거래처 회신 늦어서 하루 지연"></textarea></label>
     <div class="btns"><button id="rnSave">저장</button><button class="plain" id="rnUndo" hidden>체크 해제</button><button class="plain" id="rnClose" style="margin-left:auto">취소</button></div></div>
+  </div>
+</div>
+<div class="sheet" id="cf" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="cfTitle">
+    <h3 id="cfTitle"></h3>
+    <span class="hint" id="cfInfo"></span>
+    <div class="btns"><button id="cfOk">넘기기</button><button class="plain" id="cfNo">취소</button></div>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -683,7 +691,15 @@ const MAXMOVE=3;
 const movedTag=t=>t.moves?`<span class="tag mv${Math.min(t.moves,3)}">넘김 ${t.moves}회${t.moves>=MAXMOVE?' (최대)':''}${t.origDue&&t.origDue!==t.due?` · 원래 마감 ${md(t.origDue)}`:''}</span>`:'';
 function carryTarget(we){const m=add(we,1),t=TODAY();return m>t?m:t}
 function carryList(ws,we,sc,all){return S.tasks.filter(t=>(all||(t.moves||0)<MAXMOVE)&&num(t.prog)<100&&empOf(t.emp)&&t.start<=we&&sc.byTask[t.id]&&sc.byTask[t.id].finish<=we)}
+function snapMv(t){t.mvh=t.mvh||[];t.mvh.push({start:t.start,due:t.due,est:t.est,moves:t.moves||0,origDue:t.origDue,origEst:t.origEst,origStart:t.origStart})}
+function undoMv(t){const h=t.mvh&&t.mvh.pop();
+  if(h){['start','due','est','origDue','origEst','origStart'].forEach(k=>{if(h[k]===undefined)delete t[k];else t[k]=h[k]});if(h.moves)t.moves=h.moves;else delete t.moves;if(!t.mvh.length)delete t.mvh;return true}
+  if(t.moves&&t.origDue){t.due=t.origDue;if(t.origStart)t.start=t.origStart;if(t.origEst)t.est=t.origEst;['moves','origDue','origEst','origStart'].forEach(k=>delete t[k]);return true}
+  return false}
+const canUndoMv=t=>!!((t.mvh&&t.mvh.length)||(t.moves&&t.origDue));
+function undoIds(ids){let n=0;ids.forEach(id=>{const t=S.tasks.find(x=>x.id===id);if(t&&undoMv(t))n++});save();render();toast(`${n}건 되돌렸습니다`)}
 function carry(t,start){
+  snapMv(t);
   if(!t.origDue)t.origDue=t.due;if(!t.origEst)t.origEst=estD(t);if(!t.origStart)t.origStart=t.start;
   t.moves=(t.moves||0)+1;
   const left=Math.max(1,Math.ceil(estD(t)*(100-num(t.prog))/100));
@@ -691,12 +707,12 @@ function carry(t,start){
   const end=days[days.length-1]||start;
   t.start=start;t.est=left;if(t.due<end)t.due=end;
 }
-function toTomorrow(t){const nd=add(TODAY(),1);
+function toTomorrow(t){const nd=add(TODAY(),1);snapMv(t);
   if(!t.origDue)t.origDue=t.due;if(!t.origEst)t.origEst=estD(t);if(!t.origStart)t.origStart=t.start;t.moves=(t.moves||0)+1;
   if(t.start>=t.due||t.start>nd)t.start=nd;t.due=nd}
 function doCarry(ids){const [,we]=rpRange(),st=carryTarget(we);
   ids.forEach(id=>{const t=S.tasks.find(x=>x.id===id);if(t)carry(t,st)});
-  save();render();toast(`${ids.length}건을 ${md(st)}부터로 넘겼습니다`);
+  save();render();toastUndo(`${ids.length}건을 ${md(st)}부터로 넘겼습니다`,ids);
 }
 
 // ---------- 반복 업무: 이번만 바꾸기 ----------
@@ -880,6 +896,7 @@ function openSheet(id){
   $('fEst').value=t?t.est:'';$('fTime').value=t&&t.time||'';
   $('fNote').value=t?t.note:'';
   $('fInfo').textContent=t?[t.doneAt?`${md(t.doneAt)} 완료`:'',t.moves?`${t.moves}번 넘김 (최대 ${MAXMOVE}번)`:'',t.origDue&&t.origDue!==t.due?`원래 마감 ${md(t.origDue)}`:''].filter(Boolean).join(' · '):'';
+  $('fUndoMv').hidden=!(t&&canUndoMv(t));$('fUndoMv').textContent=t&&t.mvh&&t.mvh.length?`넘기기 되돌리기 (마감 ${md(t.mvh[t.mvh.length-1].due)}로)`:'넘기기 되돌리기 (처음 날짜로)';
   $('fDel').hidden=!t;delete $('fDel').dataset.arm;$('fDel').textContent='삭제';
   $('sheet').hidden=false;preview();setTimeout(()=>{if(!$('fTitle').hidden)$('fTitle').focus()},50);
 }
@@ -940,9 +957,9 @@ $('fab').addEventListener('click',()=>openSheet());
 
 // delegated clicks
 document.addEventListener('click',e=>{
-  const cy=e.target.closest('[data-carry]');if(cy){doCarry([cy.dataset.carry]);return}
-  const ca=e.target.closest('[data-carryall]');if(ca){const [ws,we]=rpRange();doCarry(carryList(ws,we,schedule()).map(t=>t.id));return}
-  const tm=e.target.closest('[data-tmr]');if(tm){const t=S.tasks.find(x=>x.id===tm.dataset.tmr);if(t){toTomorrow(t);save();render();toast(`${md(t.due)}로 넘겼습니다`)}return}
+  const cy=e.target.closest('[data-carry]');if(cy){const t=S.tasks.find(x=>x.id===cy.dataset.carry);ask('넘기시겠습니까?',t?t.title:'',()=>doCarry([cy.dataset.carry]));return}
+  const ca=e.target.closest('[data-carryall]');if(ca){const [ws,we]=rpRange(),L=carryList(ws,we,schedule());ask(`못 끝낸 일 ${L.length}건을 넘기시겠습니까?`,L.map(t=>t.title).slice(0,6).join(', ')+(L.length>6?' 외':''),()=>doCarry(L.map(t=>t.id)));return}
+  const tm=e.target.closest('[data-tmr]');if(tm){const t=S.tasks.find(x=>x.id===tm.dataset.tmr);if(t)ask('내일로 넘기시겠습니까?',`${t.title} · 마감 ${md(t.due)} → ${md(add(TODAY(),1))}`,()=>{toTomorrow(t);save();render();toastUndo(`${md(t.due)}로 넘겼습니다`,[t.id])});return}
   const rdn=e.target.closest('[data-rdone]');if(rdn){openRn(rdn.dataset.rdone,rdn.dataset.rdate||TODAY());return}
   const dne=e.target.closest('[data-done]');if(dne){const t=S.tasks.find(x=>x.id===dne.dataset.done);if(t){if(num(t.prog)>=100){setProg(t,0);delete t.dnote;save();render();toast('완료를 취소했습니다')}else openRn(t.id,TODAY())}return}
   const oc=e.target.closest('[data-occ]');if(oc&&!e.target.closest('.sheet')){const [id,d]=oc.dataset.occ.split('|');openOcc(id,d);return}
@@ -993,6 +1010,12 @@ function checkNotify(sc){
 setInterval(()=>render(),60000);
 
 let tt;function toast(m){const el=$('toast');el.textContent=m;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,1800)}
+function toastUndo(m,ids){const el=$('toast');el.textContent=m;const b=document.createElement('button');b.textContent='되돌리기';b.onclick=()=>{el.hidden=true;undoIds(ids)};el.appendChild(b);el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,7000)}
+let cfFn=null;function ask(title,info,fn){$('cfTitle').textContent=title;$('cfInfo').textContent=info||'';cfFn=fn;$('cf').hidden=false}
+$('cfOk').addEventListener('click',()=>{$('cf').hidden=true;const f=cfFn;cfFn=null;if(f)f()});
+$('cfNo').addEventListener('click',()=>{$('cf').hidden=true;cfFn=null});
+$('cf').addEventListener('click',e=>{if(e.target===$('cf')){$('cf').hidden=true;cfFn=null}});
+$('fUndoMv').addEventListener('click',()=>{const t=S.tasks.find(x=>x.id===editId);if(!t)return;ask('넘기기를 되돌리시겠습니까?',t.title,()=>{undoMv(t);save();closeSheet();render();toast('되돌렸습니다')})});
 // ---------- 갤럭시 앱(Capacitor) 전용: 위젯 데이터 + 예약 알림 ----------
 const CAP=window.Capacitor, NATIVE=!!(CAP&&CAP.isNativePlatform&&CAP.isNativePlatform());
 const P=NATIVE&&CAP.registerPlugin?{Preferences:CAP.registerPlugin('Preferences'),LocalNotifications:CAP.registerPlugin('LocalNotifications'),WidgetBridge:CAP.registerPlugin('WidgetBridge')}:{};
