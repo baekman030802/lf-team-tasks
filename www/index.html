@@ -504,12 +504,12 @@ function renderToday(sc){
   // per employee: tasks whose days include today, plus unfinished ones whose planned days already ended
   $('todayList').innerHTML=S.emps.length?S.emps.map(e=>{
     const c=colorOf(e);
-    // 오늘 마감인 일만 (사용자 요청). 완료한 것도 체크된 채로 남김
-    const list=S.tasks.filter(x=>has(x,e.id)&&!x.rep&&!x.ongoing&&x.due===t).sort((a,b)=>(num(a.prog)>=100)-(num(b.prog)>=100)||(a.time||'99').localeCompare(b.time||'99')||b.pri-a.pri);
+    // 오늘 마감 + 오늘이 기간(시작~마감) 안에 있는 일 (2026-10-12 사용자 요청)
+    const list=S.tasks.filter(x=>has(x,e.id)&&!x.rep&&!x.ongoing&&(x.due===t||(x.start<=t&&x.due>t&&(num(x.prog)<100||x.doneAt===t)))).sort((a,b)=>(num(a.prog)>=100)-(num(b.prog)>=100)||a.due.localeCompare(b.due)||(a.time||'99').localeCompare(b.time||'99')||b.pri-a.pri);
     const ids=list.filter(x=>num(x.prog)<100).map(x=>x.id);
     const rows=list.map(k=>{const dn=num(k.prog)>=100,est=estD(k),oth=withOthers(k,e.id);
       return `<div class="slice ${dn?'done':''}" data-edit="${k.id}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span>${cbx(k)}
-        <span class="sub">${k.time?`<span class="pill p-acc">${k.time}</span>`:''}${k.pri===3?'<span class="pill p-bad">매우 중요</span>':''}${est>1?`<span>예상 ${est}일</span>`:''}${oth?`<span>${esc(oth)}</span>`:''}${k.ex?'<span class="tag">예시</span>':''}${dn?'':`<button class="tmrb" data-tmr="${k.id}">내일로 넘기기</button>`}</span></div>`}).join('');
+        <span class="sub">${k.due===t?'<span class="pill p-bad">오늘 마감</span>':`<span class="pill p-warn">마감 ${md(k.due)} ${dday(k.due)}</span>`}${k.time?`<span class="pill p-acc">${k.time}</span>`:''}${k.pri===3?'<span class="pill p-bad">매우 중요</span>':''}${est>1?`<span>예상 ${est}일</span>`:''}${oth?`<span>${esc(oth)}</span>`:''}${k.ex?'<span class="tag">예시</span>':''}${dn||k.due!==t?'':`<button class="tmrb" data-tmr="${k.id}">내일로 넘기기</button>`}</span></div>`}).join('');
     const on=[]; // 상시 업무는 주간·리포트에서만 보임
     const rp=S.tasks.filter(x=>x.rep&&has(x,e.id)&&occOn(x,t));
     const rRows=rp.map(k=>{const dn=repDone(k,t);return `<div class="slice ${dn?'done':''}" data-occ="${k.id}|${t}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span>${cbx(k,t)}<span class="sub">${k.time?`<span class="pill p-acc">${k.time}</span>`:''}<span>↻ ${repLabel(k.rep,k.start)}${origOf(k,t)!==t?` · 이번만 옮김 (원래 ${md(origOf(k,t))})`:''}</span>${memoOf(k,t)?`<span class="rmemo">메모: ${esc(memoOf(k,t))}</span>`:''}</span></div>`}).join('');
