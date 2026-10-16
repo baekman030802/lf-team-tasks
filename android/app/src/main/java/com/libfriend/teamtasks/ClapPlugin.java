@@ -42,6 +42,10 @@ public class ClapPlugin extends Plugin {
         o.put("triggers", ClapService.triggerCount);
         o.put("lastTriggerAt", ClapService.lastTriggerAt);
         o.put("error", ClapService.lastError);
+        o.put("trig", ClapService.trig(getContext()));
+        o.put("model", ClapService.modelReady(getContext()));
+        o.put("modelState", ClapService.modelState);
+        o.put("words", ClapService.wordCount);
         return o;
     }
 
@@ -100,7 +104,16 @@ public class ClapPlugin extends Plugin {
         if (s != null) ed.putInt("sens", Math.max(1, Math.min(5, s)));
         String m = call.getString("mode");
         if (m != null) ed.putString("mode", m);
+        String t = call.getString("trig");
+        if (t != null) ed.putString("trig", t);
         ed.apply();
+        ClapService.reload = true;
+        call.resolve(state());
+    }
+
+    @PluginMethod
+    public void downloadModel(PluginCall call) {
+        ClapService.downloadModel(getContext());
         call.resolve(state());
     }
 

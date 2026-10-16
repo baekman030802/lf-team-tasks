@@ -25,7 +25,20 @@ import android.os.PowerManager;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
+import org.vosk.LibVosk;
+import org.vosk.LogLevel;
+import org.vosk.Model;
+import org.vosk.Recognizer;
 
 /**
  * 비서 대기: 마이크로 소리를 듣다가 "박수 두 번"을 알아채면 기본 어시스턴트(Claude)를 띄움.
@@ -44,6 +57,71 @@ public class ClapService extends Service {
     static volatile int triggerCount = 0;   // Claude 부른 횟수
     static volatile long lastTriggerAt = 0;
     static volatile String lastError = "";
+    static volatile int wordCount = 0;      // "자비스" 인식 횟수
+    static volatile String modelState = ""; // "", "받는 중 N%", "푸는 중", "오류: ..."
+    static volatile boolean reload = false; // 설정 바뀜 → 음성 인식 다시 준비
+    static final String MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-ko-0.22.zip";
+    // 호출어: "자비스" (+ 비슷하게 들리는 말)
+    static final Pattern WAKE = Pattern.compile("자비스|자비쓰|자빗스|쟈비스|재비스|잡이스|자비즈|자비수");
+
+    static File modelDir(Context c) { return new File(c.getFilesDir(), "vosk-ko"); }
+    static boolean modelReady(Context c) { File d = modelDir(c); return new File(d, "am").isDirectory() || new File(d, "conf").isDirectory(); }
+    static String trig(Context c) { return c.getSharedPreferences(PREFS, MODE_PRIVATE).getString("trig", "clap"); }
+
+    /** 한국어 음성 모델(약 82MB)을 받아서 앱 안에 풀기 */
+    static void downloadModel(final Context ctx) {
+        if (modelState.startsWith("받는") || modelState.startsWith("푸는")) return;
+        final Context c = ctx.getApplicationContext();
+        modelState = "받는 중 0%";
+        new Thread(() -> {
+            File zip = new File(c.getCacheDir(), "vosk-ko.zip");
+            try {
+                HttpURLConnection con = (HttpURLConnection) new URL(MODEL_URL).openConnection();
+                con.setConnectTimeout(20000); con.setReadTimeout(30000);
+                con.setInstanceFollowRedirects(true);
+                long total = con.getContentLengthLong(), got = 0;
+                try (InputStream in = con.getInputStream(); FileOutputStream out = new FileOutputStream(zip)) {
+                    byte[] b = new byte[65536]; int r;
+                    while ((r = in.read(b)) > 0) {
+                        out.write(b, 0, r); got += r;
+                        if (total > 0) modelState = "받는 중 " + (got * 100 / total) + "%";
+                    }
+                }
+                modelState = "푸는 중";
+                File dir = modelDir(c), tmp = new File(c.getFilesDir(), "vosk-tmp");
+                deleteAll(tmp); tmp.mkdirs();
+                String base = tmp.getCanonicalPath() + File.separator;
+                try (ZipInputStream zin = new ZipInputStream(new java.io.FileInputStream(zip))) {
+                    ZipEntry ze; byte[] b = new byte[65536];
+                    while ((ze = zin.getNextEntry()) != null) {
+                        String name = ze.getName();
+                        int slash = name.indexOf('/');
+                        if (slash >= 0) name = name.substring(slash + 1);   // 맨 위 폴더 이름 빼기
+                        if (name.isEmpty()) continue;
+                        File f = new File(tmp, name);
+                        if (!f.getCanonicalPath().startsWith(base)) continue;
+                        if (ze.isDirectory()) { f.mkdirs(); continue; }
+                        File par = f.getParentFile(); if (par != null) par.mkdirs();
+                        try (FileOutputStream out = new FileOutputStream(f)) { int r; while ((r = zin.read(b)) > 0) out.write(b, 0, r); }
+                    }
+                }
+                deleteAll(dir);
+                if (!tmp.renameTo(dir)) throw new Exception("폴더 이동 실패");
+                zip.delete();
+                modelState = "";
+                reload = true;
+            } catch (Exception e) {
+                zip.delete();
+                modelState = "오류: " + e.getMessage();
+            }
+        }, "lf-vosk-dl").start();
+    }
+
+    static void deleteAll(File f) {
+        if (f == null || !f.exists()) return;
+        File[] l = f.listFiles(); if (l != null) for (File x : l) deleteAll(x);
+        f.delete();
+    }
 
     private volatile boolean stop = false;
     private Thread worker;
@@ -101,7 +179,7 @@ public class ClapService extends Service {
         return new NotificationCompat.Builder(this, CH)
                 .setSmallIcon(android.R.drawable.ic_btn_speak_now)
                 .setContentTitle("비서 대기 중")
-                .setContentText("박수 두 번 → Claude")
+                .setContentText("clap".equals(trig(this)) ? "박수 두 번 → Claude" : "word".equals(trig(this)) ? "\"자비스\" → Claude" : "박수 두 번 또는 \"자비스\" → Claude")
                 .setOngoing(true)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setContentIntent(piOpen)
@@ -134,6 +212,8 @@ public class ClapService extends Service {
         double pendingE = 0;
         long lastClap = -1000;          // 마지막 박수 프레임
         long cooldownUntil = 0;         // 이 프레임까지 무시
+        Model vModel = null; Recognizer vRec = null;
+        reload = true;
 
         while (!stop) {
             int n = rec.read(buf, 0, FRAME);
@@ -147,7 +227,39 @@ public class ClapService extends Service {
                 int ax = Math.abs(x); if (ax > peak) peak = ax;
             }
             e /= n; d /= n;
+            // 설정에 따라 "자비스" 음성 인식 준비/해제
+            if (reload) {
+                reload = false;
+                String t = trig(this);
+                boolean wantWord = !"clap".equals(t) && modelReady(this);
+                if (!wantWord && vRec != null) { vRec.close(); vRec = null; }
+                if (!wantWord && vModel != null) { vModel.close(); vModel = null; }
+                if (wantWord && vRec == null) {
+                    try {
+                        LibVosk.setLogLevel(LogLevel.WARNINGS);
+                        if (vModel == null) vModel = new Model(modelDir(this).getAbsolutePath());
+                        vRec = new Recognizer(vModel, (float) RATE);
+                    } catch (Throwable ex) { lastError = "음성 모델 열기 실패: " + ex.getMessage(); vRec = null; }
+                }
+            }
+            boolean useClap = !"word".equals(trig(this)) || vRec == null;
             if (frameNo < cooldownUntil) { bg = bg * 0.98 + e * 0.02; continue; }
+            if (vRec != null) {
+                boolean fin = vRec.acceptWaveForm(buf, n);
+                if (fin || frameNo % 6 == 0) {
+                    String js = fin ? vRec.getResult() : vRec.getPartialResult();
+                    if (WAKE.matcher(js.replace(" ", "")).find()) {
+                        vRec.reset();
+                        wordCount++;
+                        cooldownUntil = frameNo + 45000 / 16;
+                        triggerCount++;
+                        lastTriggerAt = System.currentTimeMillis();
+                        new Handler(Looper.getMainLooper()).post(this::wakeClaude);
+                        continue;
+                    }
+                }
+            }
+            if (!useClap) continue;
 
             int s = sens();
             int peakMin = 16000 - s * 2200;          // 감도 3 → 9400
@@ -177,6 +289,7 @@ public class ClapService extends Service {
         }
         try { rec.stop(); } catch (Exception ignored) {}
         rec.release();
+        try { if (vRec != null) vRec.close(); if (vModel != null) vModel.close(); } catch (Throwable ignored) {}
     }
 
     /** 화면 켜고 기본 어시스턴트(Claude) 띄우기. 실패하면 Claude 앱 열기 */
@@ -191,13 +304,23 @@ public class ClapService extends Service {
             if (pm != null) {
                 @SuppressWarnings("deprecation")
                 PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "lf:clap");
-                wl.acquire(5000);
+                wl.acquire(8000);
             }
         } catch (Exception ignored) {}
-        launchAssistant(this);
+        // 화면 켜기·잠금 해제 요청은 투명 화면(WakeActivity)이 맡고, 거기서 Claude를 띄움
+        try {
+            Intent w = new Intent(this, WakeActivity.class);
+            w.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+            startActivity(w);
+        } catch (Exception e) {
+            lastError = "화면 켜기 실패: " + e.getMessage();
+            launchAssistant(this);
+        }
     }
 
-    static boolean launchAssistant(Context ctx) {
+    static boolean launchAssistant(Context ctx) { return launchAssistant(ctx, null); }
+
+    static boolean launchAssistant(Context ctx, android.os.Bundle opts) {
         SharedPreferences p = ctx.getSharedPreferences(PREFS, MODE_PRIVATE);
         String mode = p.getString("mode", "assist");
         PackageManager pm = ctx.getPackageManager();
@@ -212,7 +335,7 @@ public class ClapService extends Service {
                         break;
                     }
                 }
-                ctx.startActivity(a);
+                ctx.startActivity(a, opts);
                 return true;
             } catch (Exception e) {
                 lastError = "어시스턴트 열기 실패: " + e.getMessage();
@@ -222,7 +345,7 @@ public class ClapService extends Service {
             Intent l = pm.getLaunchIntentForPackage("com.anthropic.claude");
             if (l != null) {
                 l.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                ctx.startActivity(l);
+                ctx.startActivity(l, opts);
                 return true;
             }
             lastError = "Claude 앱을 찾지 못했습니다";
