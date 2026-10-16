@@ -148,6 +148,10 @@ button:focus-visible,.fbtn:focus-visible{outline:2px solid var(--ink);outline-of
 .st.ok{color:var(--good)}.st.bad{color:var(--bad)}
 .mvb{flex:none;font-size:.66rem;font-weight:600;padding:1px 6px;border-radius:99px}.mvb.mv1{background:var(--soft);color:var(--muted)}.mvb.mv2{background:var(--mv2-bg);color:var(--mv2)}.mvb.mv3{background:var(--bad-bg);color:var(--bad)}
 .carry-btn{width:100%}
+.later-btn{display:flex;align-items:center;gap:8px;width:100%;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-weight:600;text-align:left}
+.later-btn b{background:var(--accent-soft);color:var(--accent);border-radius:99px;padding:1px 9px;font-size:.8rem}
+.later-btn .hint{margin-left:auto;font-weight:400}
+.later-btn.has{border-color:var(--accent)}
 .rp-row .pct{font:600 .9rem var(--f-num)}
 .mini{display:flex;height:6px;border-radius:99px;overflow:hidden;background:var(--soft)}
 .mini i{display:block;height:100%}
@@ -261,6 +265,7 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
 
   <!-- 할일 -->
   <div class="view" id="v-tasks" hidden>
+    <button class="later-btn" id="laterOpen"><span>추후 할일</span><b id="laterCnt2"></b><span class="hint">목록 열기 ›</span></button>
     <section class="card">
       <h2>할일 목록 <span id="taskCnt"></span></h2>
       <div class="filters" id="filters"></div>
@@ -295,12 +300,6 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
       <div id="presetList"></div>
       <div class="pair"><input id="newPreset" type="text" placeholder="예: 소셜미디어 포스트 업로드" autocomplete="off"><button id="addPreset">추가</button></div>
       <span class="hint">여기 등록한 일은 할일 추가할 때 목록에서 바로 고를 수 있습니다.</span>
-    </section>
-    <section class="card">
-      <h2>추후 할일 <span id="laterCnt"></span></h2>
-      <div class="pair"><input id="newLater" type="text" placeholder="생각난 일을 적어두세요" autocomplete="off"><button id="addLater">추가</button></div>
-      <div id="laterList"></div>
-      <span class="hint">할 수 있을 때 [할일로]를 누르면 담당·날짜만 정해서 바로 할일로 옮겨집니다.</span>
     </section>
     <section class="card">
       <h2>알림</h2>
@@ -386,6 +385,15 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
     <div id="rnMemo" hidden>
     <label>특이사항<textarea id="rnText" placeholder="예: 거래처 회신 늦어서 하루 지연"></textarea></label>
     <div class="btns"><button id="rnSave">저장</button><button class="plain" id="rnUndo" hidden>체크 해제</button><button class="plain" id="rnClose" style="margin-left:auto">취소</button></div></div>
+  </div>
+</div>
+<div class="sheet" id="lt" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="ltTitle">
+    <h3 id="ltTitle">추후 할일 <span id="laterCnt" class="hint"></span></h3>
+    <div class="pair"><input id="newLater" type="text" placeholder="생각난 일을 적어두세요" autocomplete="off"><button id="addLater">추가</button></div>
+    <div id="laterList"></div>
+    <span class="hint">[할일로]를 누르면 내용이 채워진 할일 추가 창이 열립니다. 확인하고 저장하면 할일로 옮겨집니다.</span>
+    <div class="btns"><button class="plain" id="ltClose" style="margin-left:auto">닫기</button></div>
   </div>
 </div>
 <div class="sheet" id="cf" hidden>
@@ -568,6 +576,7 @@ function progUI(t){
 // 매우 중요(pri 3)이고 마감 하루 전부터는 할일 목록 맨 위
 const hot=t=>+(t.pri===3&&!t.rep&&!t.ongoing&&num(t.prog)<100&&diff(TODAY(),t.due)<=1);
 function renderTasks(sc){
+  try{laterUI()}catch(e){}
   $('filters').innerHTML=[['all','전체',null],...S.emps.map(e=>[e.id,e.name,e]),['done','완료',null]].map(([id,n,e])=>`<button class="fbtn" data-f="${id}" aria-pressed="${filt===id}">${e?`<span class="dot" style="--c:${colorOf(e)}"></span>`:''}${esc(n)}</button>`).join('');
   const list=S.tasks.filter(t=>!t.ongoing).filter(t=>filt==='done'?num(t.prog)>=100:(num(t.prog)<100&&(filt==='all'||has(t,filt))))
     .sort((a,b)=>hot(b)-hot(a)||a.due.localeCompare(b.due)||b.pri-a.pri);
@@ -763,13 +772,17 @@ let inboxBusy=false;
 async function inboxPull(){if(!CM.code||inboxBusy||cloudBusy)return;inboxBusy=true;
   try{const c=CM.code+'_in',r=await fbGet(c);let a=[];try{a=r&&r.data?JSON.parse(r.data):[]}catch(e){}
     if(!Array.isArray(a)||!a.length)return;
-    const have=new Set(S.tasks.map(t=>t.id)),got=[];
-    a.forEach(t=>{if(!t||!t.id||!t.title||!t.emp)return;got.push(t.id);if(have.has(t.id))return;
-      S.tasks.push(Object.assign({prog:0,created:Date.now(),hist:[[TODAY(),0]],co:[],pri:1,est:1,note:'',time:'',ongoing:0,rep:null},t))});
+    const got=[];let nL=0,nD=0;
+    a.forEach(en=>{if(!en)return;const op=en.op||'later';
+      if(op==='later'){const x=en.item||en;if(!x.id||!x.title)return;got.push(en);
+        if(!laterL().some(l=>l.id===x.id)&&!S.tasks.some(t=>t.id===x.id)){laterL().unshift(Object.assign({at:TODAY()},x));nL++}}
+      else if(op==='del'&&en.id){got.push(en);const b1=S.tasks.length,b2=laterL().length;
+        S.tasks=S.tasks.filter(t=>t.id!==en.id);S.later=laterL().filter(l=>l.id!==en.id);if(S.tasks.length<b1||S.later.length<b2)nD++}});
     if(!got.length)return;save();render();
+    const key=en=>JSON.stringify(en);const gs=new Set(got.map(key));
     const r2=await fbGet(c);let b=[];try{b=r2&&r2.data?JSON.parse(r2.data):[]}catch(e){}
-    await fbPut(c,JSON.stringify((Array.isArray(b)?b:[]).filter(t=>!got.includes(t&&t.id))),Date.now());
-    const n=a.filter(t=>t&&!have.has(t.id)).length;if(n)toast(`Claude가 할일 ${n}개를 넣었습니다`)}
+    await fbPut(c,JSON.stringify((Array.isArray(b)?b:[]).filter(en=>!gs.has(key(en)))),Date.now());
+    const m=[nL?`추후 할일 ${nL}개를 넣었습니다`:'',nD?`${nD}개를 삭제했습니다`:''].filter(Boolean).join(', ');if(m)toast('Claude가 '+m)}
   finally{inboxBusy=false}}
 async function cloudPull0(){if(!CM.code||cloudBusy)return;cloudBusy=true;
   try{const r=await fbGet(CM.code);CM.at=Date.now();CM.err='';
@@ -835,16 +848,26 @@ document.addEventListener('click',e=>{
 let pendingLater=null;
 const laterL=()=>S.later||(S.later=[]);
 function laterUI(){const L=laterL();$('laterCnt').textContent=L.length?L.length+'개':'';
-  $('laterList').innerHTML=L.length?L.map(x=>`<div class="emp-row"><span class="n">${esc(x.title)}<span class="hint" style="display:block">${md(x.at)} 적음</span></span><button class="sm" data-tolater="${x.id}">할일로</button><button class="ghost sm" data-dellater="${x.id}">삭제</button></div>`).join(''):'<div class="empty">적어둔 일이 없습니다</div>'}
+  const c2=$('laterCnt2');if(c2){c2.textContent=L.length;c2.hidden=!L.length;$('laterOpen').classList.toggle('has',L.some(x=>x.by==='claude'))}
+  const det=x=>[x.emp?[x.emp,...(x.co||[])].map(id=>(empOf(id)||{}).name).filter(Boolean).join(', '):'',x.ongoing?'상시':x.due?(x.start&&x.start!==x.due?md(x.start)+'~'+md(x.due):md(x.due)):'',x.time||'',x.pri===3?'매우 중요':''].filter(Boolean).join(' · ');
+  $('laterList').innerHTML=L.length?L.map(x=>`<div class="emp-row"><span class="n">${esc(x.title)}<span class="hint" style="display:block">${det(x)?esc(det(x))+' · ':''}${md(x.at)} ${x.by==='claude'?'Claude가 넣음':'적음'}</span></span><button class="sm" data-tolater="${x.id}">할일로</button><button class="ghost sm" data-dellater="${x.id}">삭제</button></div>`).join(''):'<div class="empty">적어둔 일이 없습니다</div>'}
 function addLater(){const v=$('newLater').value.trim();if(!v){$('newLater').focus();return}
   laterL().unshift({id:'l'+Date.now(),title:v,at:TODAY()});$('newLater').value='';save();render();toast('추후 할일에 적었습니다')}
 $('addLater').addEventListener('click',addLater);
+$('laterOpen').addEventListener('click',()=>{laterUI();$('lt').hidden=false});
+$('ltClose').addEventListener('click',()=>$('lt').hidden=true);
+$('lt').addEventListener('click',e=>{if(e.target===$('lt'))$('lt').hidden=true});
 $('newLater').addEventListener('keydown',e=>{if(e.key==='Enter')addLater()});
 document.addEventListener('click',e=>{
   const d=e.target.closest('[data-dellater]');if(d){const b=d;if(!b.dataset.arm){b.dataset.arm=1;b.textContent='한 번 더';return}S.later=laterL().filter(x=>x.id!==b.dataset.dellater);save();render();return}
   const t=e.target.closest('[data-tolater]');if(t){const x=laterL().find(y=>y.id===t.dataset.tolater);if(!x)return;
-    openSheet(null);if($('sheet').hidden)return;pendingLater=x.id;titleManual=true;
-    $('fPreset').hidden=true;$('fTitle').hidden=false;$('fTitle').value=x.title;$('fManual').textContent='목록에서 고르기';$('shTitle').textContent='추후 할일 → 할일로';preview()}
+    $('lt').hidden=true;openSheet(null);if($('sheet').hidden)return;pendingLater=x.id;titleManual=true;
+    $('fPreset').hidden=true;$('fTitle').hidden=false;$('fTitle').value=x.title;$('fManual').textContent='목록에서 고르기';$('shTitle').textContent='추후 할일 → 할일로';
+    if(x.emp){const ms=[x.emp,...(x.co||[])].filter(empOf);if(ms.length){selEmps=ms;empChips()}}
+    if(x.start)$('fStart').value=x.start;if(x.due)$('fDue').value=x.due;else if(x.start)$('fDue').value=x.start;
+    if(x.ongoing)$('fOngoing').checked=true;else if(x.start&&x.due&&x.start===x.due)$('fDay').checked=true;
+    if(x.time)$('fTime').value=x.time;if(x.pri!=null)$('fPri').value=String(x.pri);if(x.note)$('fNote').value=x.note;
+    ongoingUI();preview()}
 });
 
 // ---------- 반복 업무 체크 → 메모 ----------
