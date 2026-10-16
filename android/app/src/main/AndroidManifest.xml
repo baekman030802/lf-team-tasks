@@ -36,6 +36,12 @@
                 android:resource="@xml/task_widget_info" />
         </receiver>
 
+        <!-- 비서 대기: 박수 두 번 → Claude -->
+        <service
+            android:name=".ClapService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -53,4 +59,17 @@
     <!-- 시간 정한 할일 알람을 정확한 시간에 (Android 12 이하: SCHEDULE_EXACT_ALARM, 13 이상: USE_EXACT_ALARM 자동 허용) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- 비서 대기 (박수 인식) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.ASSIST" />
+        </intent>
+        <package android:name="com.anthropic.claude" />
+    </queries>
 </manifest>
