@@ -37,6 +37,17 @@
         </receiver>
 
         <!-- 비서 대기: 박수 두 번 → Claude -->
+        <activity
+            android:name=".WakeActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:launchMode="singleInstance"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:resizeableActivity="true" />
         <service
             android:name=".ClapService"
             android:exported="false"
