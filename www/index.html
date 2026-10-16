@@ -310,13 +310,15 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
       <span class="hint" id="notiHelp">마감 오늘·내일, 마감을 넘길 것 같은 일을 하루 한 번 알려줍니다. 웹 페이지에서는 이 화면이 열려 있을 때만 알림이 옵니다. 갤럭시 앱(APK)에서는 앱이 꺼져 있어도 정해진 시각에 알림이 오고, 홈 화면 위젯도 쓸 수 있습니다.</span>
     </section>
     <section class="card" id="clapCard" hidden>
-      <h2>비서 대기 · 박수 두 번 → Claude</h2>
+      <h2>비서 대기 · 박수 / "자비스" → Claude</h2>
       <div class="btns"><button id="clapToggle">켜기</button><span class="hint" id="clapState"></span></div>
       <div class="btns" id="clapPerm"><button class="plain sm" id="clapMic">마이크 허용</button><button class="plain sm" id="clapOv">다른 앱 위에 표시 허용</button></div>
       <div class="grid">
-        <label>감도<select id="clapSens"><option value="1">1 · 둔감</option><option value="2">2</option><option value="3">3 · 보통</option><option value="4">4</option><option value="5">5 · 민감</option></select></label>
+        <label class="full">부르는 소리<select id="clapTrig"><option value="clap">박수 두 번</option><option value="word">"자비스"라고 말하기</option><option value="both">둘 다</option></select></label>
+        <label>박수 감도<select id="clapSens"><option value="1">1 · 둔감</option><option value="2">2</option><option value="3">3 · 보통</option><option value="4">4</option><option value="5">5 · 민감</option></select></label>
         <label>부르는 방식<select id="clapMode"><option value="assist">기본 어시스턴트</option><option value="app">Claude 앱 열기</option></select></label>
       </div>
+      <div class="btns" id="clapModelRow" hidden><button class="sm" id="clapModel">"자비스" 음성 모델 받기 (약 82MB, 한 번만)</button><span class="hint" id="clapModelSt"></span></div>
       <div class="btns"><button class="plain sm" id="clapTest">지금 Claude 불러보기</button><button class="plain sm" id="clapBat">앱 설정 (배터리)</button></div>
       <span class="hint" id="clapCount"></span>
       <span class="hint">켜두면 상단에 '비서 대기 중' 알림이 떠 있습니다. 박수를 두 번 짝짝 치면 '띵' 소리 후 Claude가 뜹니다 (45초 동안은 다시 듣지 않음). 폰을 다시 켜면 여기서 다시 켜주세요. 앱 설정 → 배터리를 '제한 없음'으로 두면 중간에 꺼지지 않습니다.</span>
@@ -784,17 +786,21 @@ let inboxBusy=false;
 async function inboxPull(){if(!CM.code||inboxBusy||cloudBusy)return;inboxBusy=true;
   try{const c=CM.code+'_in',r=await fbGet(c);let a=[];try{a=r&&r.data?JSON.parse(r.data):[]}catch(e){}
     if(!Array.isArray(a)||!a.length)return;
-    const got=[];let nL=0,nD=0;
+    const got=[];let nL=0,nD=0,nC=0;
     a.forEach(en=>{if(!en)return;const op=en.op||'later';
       if(op==='later'){const x=en.item||en;if(!x.id||!x.title)return;got.push(en);
         if(!laterL().some(l=>l.id===x.id)&&!S.tasks.some(t=>t.id===x.id)){laterL().unshift(Object.assign({at:TODAY()},x));nL++}}
       else if(op==='del'&&en.id){got.push(en);const b1=S.tasks.length,b2=laterL().length;
-        S.tasks=S.tasks.filter(t=>t.id!==en.id);S.later=laterL().filter(l=>l.id!==en.id);if(S.tasks.length<b1||S.later.length<b2)nD++}});
+        S.tasks=S.tasks.filter(t=>t.id!==en.id);S.later=laterL().filter(l=>l.id!==en.id);if(S.tasks.length<b1||S.later.length<b2)nD++}
+      else if((op==='done'||op==='undone')&&en.id){got.push(en);const t=S.tasks.find(x=>x.id===en.id);if(!t)return;const on=op==='done',v=String(en.note||'').trim();
+        if(t.rep){const d=en.date||TODAY();t.rdone=t.rdone||{};t.rnote=t.rnote||{};if(on){t.rdone[d]=1;if(v)t.rnote[d]=v}else{delete t.rdone[d];delete t.rnote[d]}}
+        else if(on){if(num(t.prog)<100)setProg(t,100);if(v)t.dnote=v}else{setProg(t,0);delete t.dnote}
+        nC++}});
     if(!got.length)return;save();render();
     const key=en=>JSON.stringify(en);const gs=new Set(got.map(key));
     const r2=await fbGet(c);let b=[];try{b=r2&&r2.data?JSON.parse(r2.data):[]}catch(e){}
     await fbPut(c,JSON.stringify((Array.isArray(b)?b:[]).filter(en=>!gs.has(key(en)))),Date.now());
-    const m=[nL?`추후 할일 ${nL}개를 넣었습니다`:'',nD?`${nD}개를 삭제했습니다`:''].filter(Boolean).join(', ');if(m)toast('Claude가 '+m)}
+    const m=[nL?`추후 할일 ${nL}개를 넣었습니다`:'',nD?`${nD}개를 삭제했습니다`:'',nC?`${nC}개를 완료 처리했습니다`:''].filter(Boolean).join(', ');if(m)toast('Claude가 '+m)}
   finally{inboxBusy=false}}
 async function cloudPull0(){if(!CM.code||cloudBusy)return;cloudBusy=true;
   try{const r=await fbGet(CM.code);CM.at=Date.now();CM.err='';
@@ -1120,8 +1126,10 @@ if(NATIVE&&CAP.registerPlugin){(function(){
     $('clapToggle').textContent=r.running?'끄기':'켜기';$('clapToggle').className=r.running?'plain':'';
     $('clapState').innerHTML=r.running?'<b style="color:var(--good)">대기 중</b>':'꺼짐'+(r.error?` · <span style="color:var(--bad)">${esc(r.error)}</span>`:'');
     $('clapMic').hidden=r.mic;$('clapOv').hidden=r.overlay;$('clapPerm').hidden=r.mic&&r.overlay;
-    $('clapSens').value=String(r.sens);$('clapMode').value=r.mode;
-    $('clapCount').textContent=r.running?`인식한 박수 ${r.claps}번 · Claude 부름 ${r.triggers}번`+(r.lastTriggerAt?` (마지막 ${hhmm(r.lastTriggerAt)})`:''):(r.overlay?'':'※ "다른 앱 위에 표시"를 허용해야 화면을 안 볼 때도 Claude가 뜹니다')};
+    $('clapSens').value=String(r.sens);$('clapMode').value=r.mode;$('clapTrig').value=r.trig||'clap';
+    const wantW=(r.trig||'clap')!=='clap';$('clapModelRow').hidden=!wantW||(r.model&&!r.modelState);
+    $('clapModel').hidden=!!r.modelState&&!r.modelState.startsWith('오류');$('clapModelSt').textContent=r.modelState||(r.model?'':'모델을 받아야 "자비스"를 알아듣습니다 (와이파이 추천)');
+    $('clapCount').textContent=r.running?`박수 ${r.claps}번 · 자비스 ${r.words||0}번 · Claude 부름 ${r.triggers}번`+(r.lastTriggerAt?` (마지막 ${hhmm(r.lastTriggerAt)})`:''):(r.overlay?'':'※ "다른 앱 위에 표시"를 허용해야 화면을 안 볼 때도 Claude가 뜹니다')};
   const ref=async()=>{try{ui(await C.status())}catch(e){}};
   $('clapToggle').addEventListener('click',async()=>{try{
       if(st&&st.running){ui(await C.stop());toast('비서 대기를 껐습니다');return}
@@ -1132,10 +1140,14 @@ if(NATIVE&&CAP.registerPlugin){(function(){
   $('clapOv').addEventListener('click',async()=>{try{await C.openOverlaySettings()}catch(e){}});
   $('clapBat').addEventListener('click',async()=>{try{await C.openAppSettings()}catch(e){}});
   $('clapSens').addEventListener('change',async()=>{try{ui(await C.setOptions({sens:+$('clapSens').value}))}catch(e){}});
+  $('clapTrig').addEventListener('change',async()=>{try{let r=await C.setOptions({trig:$('clapTrig').value});ui(r);
+      if($('clapTrig').value!=='clap'&&!r.model)toast('먼저 "자비스" 음성 모델을 받아주세요');
+      if(r.running){await C.stop();setTimeout(async()=>{try{ui(await C.start())}catch(e){}},600)}}catch(e){}});
+  $('clapModel').addEventListener('click',async()=>{try{ui(await C.downloadModel());toast('음성 모델을 받는 중입니다')}catch(e){toast('실패: '+(e.message||e))}});
   $('clapMode').addEventListener('change',async()=>{try{ui(await C.setOptions({mode:$('clapMode').value}))}catch(e){}});
   $('clapTest').addEventListener('click',async()=>{try{const r=await C.testLaunch();if(!r.ok)toast(r.error||'Claude를 열지 못했습니다')}catch(e){toast('실패: '+(e.message||e))}});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)ref()});
-  pollT=setInterval(()=>{if(!document.hidden&&!$('v-team').hidden)ref()},1500);
+  pollT=setInterval(()=>{if(!document.hidden&&!$('v-team').hidden)ref()},1000);
   ref();
 })()}
 let syncT;window.__lfSync=()=>{clearTimeout(syncT);syncT=setTimeout(syncNative,400)};
