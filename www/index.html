@@ -757,7 +757,21 @@ function cloudErr(e){CM.err=String(e&&e.message||e);cmSave();cloudUI()}
 async function cloudPush(force){if(!CM.code||cloudBusy)return;cloudBusy=true;
   try{const t=force?Date.now():(CM.editAt||Date.now());await fbPut(CM.code,payload(),t);CM.last=t;CM.dirty=false;CM.at=Date.now();CM.err='';cmSave()}
   catch(e){cloudErr(e)}finally{cloudBusy=false;cloudUI()}}
-async function cloudPull(){if(!CM.code||cloudBusy)return;cloudBusy=true;
+async function cloudPull(){await cloudPull0();try{await inboxPull()}catch(e){}}
+// Claude 연결 서버가 넣은 할일: sync/<코드>_in 문서(받은 함) → 할일로 가져오고 받은 함에서 뺌
+let inboxBusy=false;
+async function inboxPull(){if(!CM.code||inboxBusy||cloudBusy)return;inboxBusy=true;
+  try{const c=CM.code+'_in',r=await fbGet(c);let a=[];try{a=r&&r.data?JSON.parse(r.data):[]}catch(e){}
+    if(!Array.isArray(a)||!a.length)return;
+    const have=new Set(S.tasks.map(t=>t.id)),got=[];
+    a.forEach(t=>{if(!t||!t.id||!t.title||!t.emp)return;got.push(t.id);if(have.has(t.id))return;
+      S.tasks.push(Object.assign({prog:0,created:Date.now(),hist:[[TODAY(),0]],co:[],pri:1,est:1,note:'',time:'',ongoing:0,rep:null},t))});
+    if(!got.length)return;save();render();
+    const r2=await fbGet(c);let b=[];try{b=r2&&r2.data?JSON.parse(r2.data):[]}catch(e){}
+    await fbPut(c,JSON.stringify((Array.isArray(b)?b:[]).filter(t=>!got.includes(t&&t.id))),Date.now());
+    const n=a.filter(t=>t&&!have.has(t.id)).length;if(n)toast(`Claude가 할일 ${n}개를 넣었습니다`)}
+  finally{inboxBusy=false}}
+async function cloudPull0(){if(!CM.code||cloudBusy)return;cloudBusy=true;
   try{const r=await fbGet(CM.code);CM.at=Date.now();CM.err='';
     if(!r){cloudBusy=false;await cloudPush(true);return}
     if(r.updated>CM.last){if(CM.dirty&&CM.editAt>r.updated){cloudBusy=false;await cloudPush();return}applyRemote(r)}
