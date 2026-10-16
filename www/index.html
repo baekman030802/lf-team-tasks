@@ -309,6 +309,18 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
       <div class="btns" id="exactRow" hidden><span class="hint" id="exactState"></span><button class="plain sm" id="exactBtn">정확한 시간 알람 허용</button></div>
       <span class="hint" id="notiHelp">마감 오늘·내일, 마감을 넘길 것 같은 일을 하루 한 번 알려줍니다. 웹 페이지에서는 이 화면이 열려 있을 때만 알림이 옵니다. 갤럭시 앱(APK)에서는 앱이 꺼져 있어도 정해진 시각에 알림이 오고, 홈 화면 위젯도 쓸 수 있습니다.</span>
     </section>
+    <section class="card" id="clapCard" hidden>
+      <h2>비서 대기 · 박수 두 번 → Claude</h2>
+      <div class="btns"><button id="clapToggle">켜기</button><span class="hint" id="clapState"></span></div>
+      <div class="btns" id="clapPerm"><button class="plain sm" id="clapMic">마이크 허용</button><button class="plain sm" id="clapOv">다른 앱 위에 표시 허용</button></div>
+      <div class="grid">
+        <label>감도<select id="clapSens"><option value="1">1 · 둔감</option><option value="2">2</option><option value="3">3 · 보통</option><option value="4">4</option><option value="5">5 · 민감</option></select></label>
+        <label>부르는 방식<select id="clapMode"><option value="assist">기본 어시스턴트</option><option value="app">Claude 앱 열기</option></select></label>
+      </div>
+      <div class="btns"><button class="plain sm" id="clapTest">지금 Claude 불러보기</button><button class="plain sm" id="clapBat">앱 설정 (배터리)</button></div>
+      <span class="hint" id="clapCount"></span>
+      <span class="hint">켜두면 상단에 '비서 대기 중' 알림이 떠 있습니다. 박수를 두 번 짝짝 치면 '띵' 소리 후 Claude가 뜹니다 (45초 동안은 다시 듣지 않음). 폰을 다시 켜면 여기서 다시 켜주세요. 앱 설정 → 배터리를 '제한 없음'으로 두면 중간에 꺼지지 않습니다.</span>
+    </section>
     <section class="card">
       <h2>폰 ↔ 컴퓨터 동기화</h2>
       <div id="cloudOff">
@@ -1101,6 +1113,31 @@ async function syncNative(){
     if(list.length)await P.LocalNotifications.schedule({notifications:list.slice(0,100)});
   }catch(e){}
 }
+// ---------- 비서 대기 (박수 두 번 → Claude) ----------
+if(NATIVE&&CAP.registerPlugin){(function(){
+  const C=CAP.registerPlugin('ClapListener');let st=null,pollT=null;
+  const ui=r=>{if(!r)return;st=r;$('clapCard').hidden=false;
+    $('clapToggle').textContent=r.running?'끄기':'켜기';$('clapToggle').className=r.running?'plain':'';
+    $('clapState').innerHTML=r.running?'<b style="color:var(--good)">대기 중</b>':'꺼짐'+(r.error?` · <span style="color:var(--bad)">${esc(r.error)}</span>`:'');
+    $('clapMic').hidden=r.mic;$('clapOv').hidden=r.overlay;$('clapPerm').hidden=r.mic&&r.overlay;
+    $('clapSens').value=String(r.sens);$('clapMode').value=r.mode;
+    $('clapCount').textContent=r.running?`인식한 박수 ${r.claps}번 · Claude 부름 ${r.triggers}번`+(r.lastTriggerAt?` (마지막 ${hhmm(r.lastTriggerAt)})`:''):(r.overlay?'':'※ "다른 앱 위에 표시"를 허용해야 화면을 안 볼 때도 Claude가 뜹니다')};
+  const ref=async()=>{try{ui(await C.status())}catch(e){}};
+  $('clapToggle').addEventListener('click',async()=>{try{
+      if(st&&st.running){ui(await C.stop());toast('비서 대기를 껐습니다');return}
+      let r=await C.status();if(!r.mic)r=await C.requestMic();if(!r.mic){ui(r);toast('마이크 권한이 필요합니다');return}
+      ui(await C.start());toast('비서 대기를 켰습니다. 박수 두 번!');setTimeout(ref,800)}
+    catch(e){toast('실패: '+(e.message||e));ref()}});
+  $('clapMic').addEventListener('click',async()=>{try{ui(await C.requestMic())}catch(e){}});
+  $('clapOv').addEventListener('click',async()=>{try{await C.openOverlaySettings()}catch(e){}});
+  $('clapBat').addEventListener('click',async()=>{try{await C.openAppSettings()}catch(e){}});
+  $('clapSens').addEventListener('change',async()=>{try{ui(await C.setOptions({sens:+$('clapSens').value}))}catch(e){}});
+  $('clapMode').addEventListener('change',async()=>{try{ui(await C.setOptions({mode:$('clapMode').value}))}catch(e){}});
+  $('clapTest').addEventListener('click',async()=>{try{const r=await C.testLaunch();if(!r.ok)toast(r.error||'Claude를 열지 못했습니다')}catch(e){toast('실패: '+(e.message||e))}});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)ref()});
+  pollT=setInterval(()=>{if(!document.hidden&&!$('v-team').hidden)ref()},1500);
+  ref();
+})()}
 let syncT;window.__lfSync=()=>{clearTimeout(syncT);syncT=setTimeout(syncNative,400)};
 if(NATIVE){
   $('alarmRow').hidden=false;$('alarmTime').value=S.alarm||'09:00';
