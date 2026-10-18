@@ -322,7 +322,7 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
       <div class="btns" id="clapModelRow" hidden><button class="sm" id="clapModel">호출어 음성 모델 받기 (약 82MB, 한 번만)</button><span class="hint" id="clapModelSt"></span></div>
       <div class="btns"><button class="plain sm" id="clapTest">지금 Claude 불러보기</button><button class="plain sm" id="clapBat">앱 설정 (배터리)</button></div>
       <span class="hint" id="clapCount"></span>
-      <span class="hint">켜두면 상단에 '비서 대기 중' 알림이 떠 있습니다. 호출어를 말하면 '띵' 소리 후 Claude가 뜹니다 (45초 동안은 다시 듣지 않음). 폰을 다시 켜면 여기서 다시 켜주세요. 앱 설정 → 배터리를 '제한 없음'으로 두면 중간에 꺼지지 않습니다.</span>
+      <span class="hint">켜두면 상단에 '비서 대기 중' 알림이 떠 있습니다. 호출어를 말하면 '띵' 소리 후 Claude가 뜹니다 (8초 뒤부터 다시 들음). 폰을 다시 켜면 여기서 다시 켜주세요. 앱 설정 → 배터리를 '제한 없음'으로 두면 중간에 꺼지지 않습니다.</span>
     </section>
     <section class="card">
       <h2>폰 ↔ 컴퓨터 동기화</h2>
@@ -787,7 +787,7 @@ let inboxBusy=false;
 async function inboxPull(){if(!CM.code||inboxBusy||cloudBusy)return;inboxBusy=true;
   try{const c=CM.code+'_in',r=await fbGet(c);let a=[];try{a=r&&r.data?JSON.parse(r.data):[]}catch(e){}
     if(!Array.isArray(a)||!a.length)return;
-    const got=[];let nL=0,nD=0,nC=0;
+    const got=[];let nL=0,nD=0,nC=0,nU=0,nT=0;
     a.forEach(en=>{if(!en)return;const op=en.op||'later';
       if(op==='later'){const x=en.item||en;if(!x.id||!x.title)return;got.push(en);
         if(!laterL().some(l=>l.id===x.id)&&!S.tasks.some(t=>t.id===x.id)){laterL().unshift(Object.assign({at:TODAY()},x));nL++}}
@@ -796,12 +796,22 @@ async function inboxPull(){if(!CM.code||inboxBusy||cloudBusy)return;inboxBusy=tr
       else if((op==='done'||op==='undone')&&en.id){got.push(en);const t=S.tasks.find(x=>x.id===en.id);if(!t)return;const on=op==='done',v=String(en.note||'').trim();
         if(t.rep){const d=en.date||TODAY();t.rdone=t.rdone||{};t.rnote=t.rnote||{};if(on){t.rdone[d]=1;if(v)t.rnote[d]=v}else{delete t.rdone[d];delete t.rnote[d]}}
         else if(on){if(num(t.prog)<100)setProg(t,100);if(v)t.dnote=v}else{setProg(t,0);delete t.dnote}
-        nC++}});
+        nC++}
+      else if(op==='task'&&en.item&&en.item.id&&en.item.title){got.push(en);const x=en.item;
+        if(!S.tasks.some(t=>t.id===x.id)){S.tasks.push(Object.assign({prog:0,created:Date.now(),hist:[[TODAY(),0]],co:[],pri:1,est:1,note:'',time:'',ongoing:0,rep:null},x));nT++}}
+      else if(op==='update'&&en.id&&en.patch){got.push(en);const P2=en.patch;
+        const l=laterL().find(x=>x.id===en.id);if(l){Object.assign(l,P2);nU++;return}
+        const t=S.tasks.find(x=>x.id===en.id);if(!t)return;
+        const dateCh=(P2.due&&P2.due!==t.due)||(P2.start&&P2.start!==t.start);
+        if(dateCh){snapMv(t);if(P2.due&&P2.due>t.due){if(!t.origDue)t.origDue=t.due;if(!t.origStart)t.origStart=t.start;if(!t.origEst)t.origEst=estD(t);t.moves=(t.moves||0)+1}}
+        ['due','start','time','pri','emp','co','title','note'].forEach(k=>{if(P2[k]!==undefined)t[k]=P2[k]});
+        if(t.start&&t.due&&t.start===t.due)t.est=1;
+        nU++}});
     if(!got.length)return;save();render();
     const key=en=>JSON.stringify(en);const gs=new Set(got.map(key));
     const r2=await fbGet(c);let b=[];try{b=r2&&r2.data?JSON.parse(r2.data):[]}catch(e){}
     await fbPut(c,JSON.stringify((Array.isArray(b)?b:[]).filter(en=>!gs.has(key(en)))),Date.now());
-    const m=[nL?`추후 할일 ${nL}개를 넣었습니다`:'',nD?`${nD}개를 삭제했습니다`:'',nC?`${nC}개를 완료 처리했습니다`:''].filter(Boolean).join(', ');if(m)toast('Claude가 '+m)}
+    const m=[nT?`할일 ${nT}개를 바로 넣었습니다`:'',nL?`추후 할일 ${nL}개를 넣었습니다`:'',nD?`${nD}개를 삭제했습니다`:'',nC?`${nC}개를 완료 처리했습니다`:'',nU?`${nU}개를 수정했습니다`:''].filter(Boolean).join(', ');if(m)toast('Claude가 '+m)}
   finally{inboxBusy=false}}
 async function cloudPull0(){if(!CM.code||cloudBusy)return;cloudBusy=true;
   try{const r=await fbGet(CM.code);CM.at=Date.now();CM.err='';
