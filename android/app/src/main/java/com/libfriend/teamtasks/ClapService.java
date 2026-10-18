@@ -288,8 +288,33 @@ public class ClapService extends Service {
         Model vModel = null; Recognizer vRec = null; String loadedLang = "";
         reload = true;
 
+        int zeroFrames = 0, failCount = 0;
         while (!stop) {
             int n = rec.read(buf, 0, FRAME);
+            // Claude가 마이크를 쓰고 나면 녹음이 끊기거나(오류) 소리가 0으로만 들어올 수 있음 → 마이크 다시 열기
+            boolean dead = n < 0 || rec.getRecordingState() != AudioRecord.RECORDSTATE_RECORDING;
+            if (!dead && n > 0) {
+                boolean silent = true;
+                for (int i = 0; i < n; i++) if (buf[i] != 0) { silent = false; break; }
+                zeroFrames = silent ? zeroFrames + 1 : 0;
+            }
+            if (dead || zeroFrames > 190) {          // 오류 또는 3초 넘게 완전한 0
+                try { rec.stop(); } catch (Exception ignored) {}
+                rec.release();
+                try { Thread.sleep(dead ? 800 : 300); } catch (InterruptedException ignored) {}
+                try {
+                    rec = new AudioRecord(MediaRecorder.AudioSource.MIC, RATE, AudioFormat.CHANNEL_IN_MONO,
+                            AudioFormat.ENCODING_PCM_16BIT, Math.max(min, FRAME * 8));
+                    rec.startRecording();
+                    failCount = 0;
+                } catch (Exception ex) {
+                    lastError = "마이크 다시 열기 실패: " + ex.getMessage();
+                    if (++failCount > 20) { new Handler(Looper.getMainLooper()).post(this::stopSelf); break; }
+                }
+                zeroFrames = 0;
+                if (vRec != null) vRec.reset();
+                continue;
+            }
             if (n <= 0) continue;
             frameNo++;
             double e = 0, d = 0; int peak = 0, prev = buf[0];
@@ -329,7 +354,7 @@ public class ClapService extends Service {
                     if (heardWake(heard)) {
                         vRec.reset();
                         wordCount++;
-                        cooldownUntil = frameNo + 45000 / 16;
+                        cooldownUntil = frameNo + 8000 / 16;
                         triggerCount++;
                         lastTriggerAt = System.currentTimeMillis();
                         new Handler(Looper.getMainLooper()).post(this::wakeClaude);
@@ -355,7 +380,7 @@ public class ClapService extends Service {
                     long gap = frameNo - 6 - lastClap;   // 프레임 단위 (1프레임 = 16ms)
                     if (gap >= 10 && gap <= 50) {        // 0.16초 ~ 0.8초 간격 = 박수 두 번
                         lastClap = -1000;
-                        cooldownUntil = frameNo + 45000 / 16;  // 45초 동안 무시 (Claude와 대화하는 동안)
+                        cooldownUntil = frameNo + 8000 / 16;  // 8초 동안 무시 (같은 말로 두 번 뜨지 않게)
                         triggerCount++;
                         lastTriggerAt = System.currentTimeMillis();
                         new Handler(Looper.getMainLooper()).post(this::wakeClaude);
