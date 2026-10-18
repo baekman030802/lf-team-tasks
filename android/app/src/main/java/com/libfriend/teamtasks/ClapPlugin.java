@@ -46,6 +46,9 @@ public class ClapPlugin extends Plugin {
         o.put("model", ClapService.modelReady(getContext()));
         o.put("modelState", ClapService.modelState);
         o.put("words", ClapService.wordCount);
+        o.put("heard", ClapService.lastHeard);
+        o.put("word", prefs().getString("word", "자비스"));
+        o.put("lang", ClapService.lang(getContext()));
         return o;
     }
 
@@ -106,6 +109,8 @@ public class ClapPlugin extends Plugin {
         if (m != null) ed.putString("mode", m);
         String t = call.getString("trig");
         if (t != null) ed.putString("trig", t);
+        String w = call.getString("word");
+        if (w != null && !w.trim().isEmpty()) ed.putString("word", w.trim());
         ed.apply();
         ClapService.reload = true;
         call.resolve(state());

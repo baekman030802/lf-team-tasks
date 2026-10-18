@@ -60,13 +60,85 @@ public class ClapService extends Service {
     static volatile int wordCount = 0;      // "자비스" 인식 횟수
     static volatile String modelState = ""; // "", "받는 중 N%", "푸는 중", "오류: ..."
     static volatile boolean reload = false; // 설정 바뀜 → 음성 인식 다시 준비
-    static final String MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-ko-0.22.zip";
+    static final String URL_KO = "https://alphacephei.com/vosk/models/vosk-model-small-ko-0.22.zip"; // 82MB
+    static final String URL_EN = "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip"; // 40MB
+    /** 호출어에 영어 글자가 있으면 영어 모델, 아니면 한국어 모델 */
+    static String lang(Context c) {
+        String w = c.getSharedPreferences(PREFS, MODE_PRIVATE).getString("word", "자비스");
+        return w.matches(".*[A-Za-z].*") ? "en" : "ko";
+    }
     // 호출어: "자비스" (+ 비슷하게 들리는 말)
     static final Pattern WAKE = Pattern.compile("자비스|자비쓰|자빗스|쟈비스|재비스|잡이스|자비즈|자비수");
+    static volatile String lastHeard = "";  // 테스트용: 마지막으로 알아들은 말
 
-    static File modelDir(Context c) { return new File(c.getFilesDir(), "vosk-ko"); }
+    /** 한글을 자모로 풀기 (예: 자 → ㅈㅏ). 비슷한 발음 비교용 */
+    static String jamo(String t) {
+        final String CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
+        final String JUNG = "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ";
+        final String JONG = " ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ";
+        StringBuilder b = new StringBuilder();
+        for (char c : t.toCharArray()) {
+            if (c >= 0xAC00 && c <= 0xD7A3) {
+                int x = c - 0xAC00;
+                b.append(CHO.charAt(x / 588)).append(JUNG.charAt((x % 588) / 28));
+                if (x % 28 != 0) b.append(JONG.charAt(x % 28));
+            }
+        }
+        return b.toString();
+    }
+
+    static int dist(String a, String b) {
+        int[] p = new int[b.length() + 1], q = new int[b.length() + 1];
+        for (int j = 0; j <= b.length(); j++) p[j] = j;
+        for (int i = 1; i <= a.length(); i++) {
+            q[0] = i;
+            for (int j = 1; j <= b.length(); j++)
+                q[j] = Math.min(Math.min(q[j - 1] + 1, p[j] + 1), p[j - 1] + (a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1));
+            int[] t = p; p = q; q = t;
+        }
+        return p[b.length()];
+    }
+
+    static volatile String wakeWord = "자비스";   // 설정에서 바꿀 수 있는 호출어
+
+    /** 호출어와 발음이 비슷한 말이 들어 있는지 (자모 1개 차이까지, 짧은 단어는 정확히) */
+    static boolean heardWake(String text) {
+        if (wakeWord.matches(".*[A-Za-z].*")) {   // 영어 호출어: 단어 단위로 비교 (5글자 이상이면 1글자 차이 허용)
+            String w = wakeWord.toLowerCase().replaceAll("[^a-z]", "");
+            String[] ws = text.toLowerCase().replaceAll("[^a-z ]", " ").trim().split("\\s+");
+            for (int i = 0; i < ws.length; i++) {
+                String a = ws[i], ab = i + 1 < ws.length ? a + ws[i + 1] : a;
+                if (a.equals(w) || ab.equals(w)) return true;
+                if (w.length() >= 5 && (dist(a, w) <= 1 || dist(ab, w) <= 1)) return true;
+            }
+            return false;
+        }
+        String t = text.replace(" ", "");
+        String w = wakeWord.replace(" ", "");
+        if (w.isEmpty()) return false;
+        if (t.contains(w)) return true;
+        if ("자비스".equals(w) && WAKE.matcher(t).find()) return true;
+        String j = jamo(t), WAKE_J = jamo(w);
+        int L = WAKE_J.length();
+        if (L < 6) return false;   // 자모 6개 미만(예: 두 글자 단어)은 오작동이 많아 정확히 같을 때만
+        for (int len = L - 1; len <= L + 1; len++)
+            for (int i = 0; i + len <= j.length(); i++)
+                if (dist(j.substring(i, i + len), WAKE_J) <= 1) return true;
+        return false;
+    }
+
+    /** Vosk 결과 JSON에서 글자만 꺼내기 */
+    static String voskText(String js) {
+        int k = js.indexOf(":");
+        if (k < 0) return "";
+        int a = js.indexOf('"', k + 1), b = js.lastIndexOf('"');
+        return (a >= 0 && b > a) ? js.substring(a + 1, b).trim() : "";
+    }
+
+    static File modelDir(Context c) { return new File(c.getFilesDir(), "vosk-" + lang(c)); }
     static boolean modelReady(Context c) { File d = modelDir(c); return new File(d, "am").isDirectory() || new File(d, "conf").isDirectory(); }
-    static String trig(Context c) { return c.getSharedPreferences(PREFS, MODE_PRIVATE).getString("trig", "clap"); }
+    // 박수는 폰 내려놓는 소리에 잘못 반응해서 뺌 (사용자 요청) → 항상 호출어만
+    static String trig(Context c) { return "word"; }
 
     /** 한국어 음성 모델(약 82MB)을 받아서 앱 안에 풀기 */
     static void downloadModel(final Context ctx) {
@@ -76,7 +148,7 @@ public class ClapService extends Service {
         new Thread(() -> {
             File zip = new File(c.getCacheDir(), "vosk-ko.zip");
             try {
-                HttpURLConnection con = (HttpURLConnection) new URL(MODEL_URL).openConnection();
+                HttpURLConnection con = (HttpURLConnection) new URL("en".equals(lang(c)) ? URL_EN : URL_KO).openConnection();
                 con.setConnectTimeout(20000); con.setReadTimeout(30000);
                 con.setInstanceFollowRedirects(true);
                 long total = con.getContentLengthLong(), got = 0;
@@ -162,6 +234,7 @@ public class ClapService extends Service {
     }
 
     private Notification buildNotification() {
+        wakeWord = getSharedPreferences(PREFS, MODE_PRIVATE).getString("word", "자비스");
         NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= 26 && nm != null) {
             NotificationChannel ch = new NotificationChannel(CH, "비서 대기", NotificationManager.IMPORTANCE_LOW);
@@ -179,7 +252,7 @@ public class ClapService extends Service {
         return new NotificationCompat.Builder(this, CH)
                 .setSmallIcon(android.R.drawable.ic_btn_speak_now)
                 .setContentTitle("비서 대기 중")
-                .setContentText("clap".equals(trig(this)) ? "박수 두 번 → Claude" : "word".equals(trig(this)) ? "\"자비스\" → Claude" : "박수 두 번 또는 \"자비스\" → Claude")
+                .setContentText("\"" + wakeWord + "\" → Claude")
                 .setOngoing(true)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setContentIntent(piOpen)
@@ -212,7 +285,7 @@ public class ClapService extends Service {
         double pendingE = 0;
         long lastClap = -1000;          // 마지막 박수 프레임
         long cooldownUntil = 0;         // 이 프레임까지 무시
-        Model vModel = null; Recognizer vRec = null;
+        Model vModel = null; Recognizer vRec = null; String loadedLang = "";
         reload = true;
 
         while (!stop) {
@@ -230,25 +303,30 @@ public class ClapService extends Service {
             // 설정에 따라 "자비스" 음성 인식 준비/해제
             if (reload) {
                 reload = false;
+                wakeWord = getSharedPreferences(PREFS, MODE_PRIVATE).getString("word", "자비스");
                 String t = trig(this);
                 boolean wantWord = !"clap".equals(t) && modelReady(this);
+                String lg = lang(this);
+                if (vModel != null && !lg.equals(loadedLang)) { if (vRec != null) { vRec.close(); vRec = null; } vModel.close(); vModel = null; }
                 if (!wantWord && vRec != null) { vRec.close(); vRec = null; }
                 if (!wantWord && vModel != null) { vModel.close(); vModel = null; }
                 if (wantWord && vRec == null) {
                     try {
                         LibVosk.setLogLevel(LogLevel.WARNINGS);
-                        if (vModel == null) vModel = new Model(modelDir(this).getAbsolutePath());
+                        if (vModel == null) { vModel = new Model(modelDir(this).getAbsolutePath()); loadedLang = lg; }
                         vRec = new Recognizer(vModel, (float) RATE);
                     } catch (Throwable ex) { lastError = "음성 모델 열기 실패: " + ex.getMessage(); vRec = null; }
                 }
             }
-            boolean useClap = !"word".equals(trig(this)) || vRec == null;
+            boolean useClap = false;
             if (frameNo < cooldownUntil) { bg = bg * 0.98 + e * 0.02; continue; }
             if (vRec != null) {
                 boolean fin = vRec.acceptWaveForm(buf, n);
                 if (fin || frameNo % 6 == 0) {
                     String js = fin ? vRec.getResult() : vRec.getPartialResult();
-                    if (WAKE.matcher(js.replace(" ", "")).find()) {
+                    String heard = voskText(js);
+                    if (!heard.isEmpty()) lastHeard = heard;
+                    if (heardWake(heard)) {
                         vRec.reset();
                         wordCount++;
                         cooldownUntil = frameNo + 45000 / 16;
