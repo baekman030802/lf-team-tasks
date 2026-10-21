@@ -228,17 +228,54 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
 .toast button{margin-left:10px;padding:3px 10px;font-size:.8rem;background:var(--accent-soft);color:var(--accent);border:0}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(130px + var(--sab));background:var(--ink);color:var(--bg);font-size:.85rem;padding:8px 14px;border-radius:8px;z-index:30}
 @media (prefers-reduced-motion:no-preference){.sheet .panel{animation:up .18s ease-out}@keyframes up{from{transform:scale(.96);opacity:.6}to{transform:none;opacity:1}}}
+
+/* ===== 2026-10-21 UI 정리: 요약 칸 + 급한 순서 묶음 + 두 줄 카드 ===== */
+header h1{font-weight:800;letter-spacing:.06em;font-size:1.15rem}
+.sumt{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.tile{display:grid;gap:0;justify-items:start;text-align:left;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px 10px 9px;color:var(--ink);min-width:0}
+.tile b{font:700 1.45rem/1.15 var(--f-num)}
+.tile span{font-size:.7rem;color:var(--muted);white-space:nowrap}
+.tile.r b{color:var(--bad)}.tile.a b{color:var(--warn)}
+.tile.zero b{color:var(--muted);opacity:.45}
+.filters{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}
+.filters::-webkit-scrollbar{display:none}
+.fbtn{flex:none;padding:6px 13px;font-size:.82rem}
+.fbtn[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.gsec{display:flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;color:var(--muted);padding:4px 4px 0;scroll-margin-top:12px}
+.gsec b{font:600 .72rem var(--f-num);background:var(--soft);color:var(--muted);border-radius:99px;padding:0 7px}
+.gsec.r{color:var(--bad)}.gsec.r b{background:var(--bad-bg);color:var(--bad)}
+.gsec.a{color:var(--warn)}.gsec.a b{background:var(--warn-bg);color:var(--warn)}
+.gcard{background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-top:-6px}
+.lrow{display:flex;align-items:center;gap:12px;padding:12px 12px 12px 10px;border-top:1px solid var(--line);cursor:pointer;min-width:0}
+.lrow:first-child{border-top:0}
+.lbar{width:4px;align-self:stretch;border-radius:4px;background:var(--c);flex:none}
+.lmid{flex:1;min-width:0;display:grid;gap:3px}
+.lt{font-size:1rem;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.ls{font-size:.78rem;color:var(--muted);line-height:1.4}
+.ls b{color:var(--ink);font-weight:600}
+.ls .bad{color:var(--bad);font-weight:600}.ls .acc{color:var(--accent);font-weight:600}
+.memo{font-size:.76rem;color:var(--muted);background:var(--soft);border-radius:8px;padding:3px 8px;justify-self:start;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hotp{font-size:.66rem;font-weight:700;color:var(--bad);background:var(--bad-bg);border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:2px;white-space:nowrap}
+.lact{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:2px}
+.lrow .cbx{width:34px;height:34px;border-radius:11px;font-size:1.05rem}
+.lrow.done .lt{text-decoration:line-through;color:var(--muted)}
+.lrow.done .lbar{opacity:.35}
+.ecard{background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.ehead{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line)}
+.ehead b{font-size:.95rem}.ehead .hint{margin-left:auto}
+.idle{font-size:.8rem;color:var(--muted);padding:2px 4px}
 </style>
 </head><body>
 
 <div class="wrap">
   <header>
-    <h1>LIBFRIEND 팀 할일</h1>
+    <h1>LIBFRIEND</h1>
     <span class="date"><span id="cloudDot" class="cloud" hidden></span> <span id="todayLbl"></span></span>
   </header>
 
   <!-- 오늘 -->
   <div class="view" id="v-today">
+    <div class="sumt" id="sumToday"></div>
     <div class="alerts" id="alerts"></div>
     <div id="todayList" class="view"></div>
   </div>
@@ -265,12 +302,11 @@ nav.tabs button[aria-selected=true]{color:var(--accent);box-shadow:inset 0 3px 0
 
   <!-- 할일 -->
   <div class="view" id="v-tasks" hidden>
+    <div class="sumt" id="sumTasks"></div>
+    <div class="filters" id="filters"></div>
     <button class="later-btn" id="laterOpen"><span>추후 할일</span><b id="laterCnt2"></b><span class="hint">목록 열기 ›</span></button>
-    <section class="card">
-      <h2>할일 목록 <span id="taskCnt"></span></h2>
-      <div class="filters" id="filters"></div>
-      <div id="taskList"></div>
-    </section>
+    <span id="taskCnt" hidden></span>
+    <div id="taskList" class="view"></div>
   </div>
 
   <!-- 리포트 -->
@@ -511,34 +547,45 @@ function stepsHTML(alloc,idx,c){
 }
 
 // ---------- 오늘 ----------
+// 공통: 급한 순서 묶음 (마감 지남 / 오늘 / 내일 / 7일 안 / 그 이후)
+const GRP=[['over','마감 지남','r'],['today','오늘 마감 · 마감 위험','r'],['tmr','내일 마감','a'],['week','7일 안',''],['later','그 이후','']];
+function groupOf(x){const n=diff(TODAY(),x.due);return n<0?'over':n===0?'today':n===1?'tmr':n<=7?'week':'later'}
+function tilesHTML(L){const g={over:0,today:0,tmr:0,week:0};L.forEach(x=>{const k=groupOf(x);if(k in g)g[k]++});
+  return [['over','마감 지남','r'],['today','오늘 마감','r'],['tmr','내일 마감','a'],['week','7일 안','']].map(([k,l,c])=>`<button class="tile ${c} ${g[k]?'':'zero'}" data-jump="${k}"><b>${g[k]}</b><span>${l}</span></button>`).join('')}
+const openL=()=>S.tasks.filter(x=>!x.rep&&!x.ongoing&&num(x.prog)<100);
+// 한 줄 카드: 제목 / 사람 · 날짜 · 시간 / 메모
+function rowHTML(k,o){o=o||{};const t=TODAY(),d=o.date||t,e=empOf(k.emp),dn=k.rep?repDone(k,d):num(k.prog)>=100,n=diff(t,k.due);
+  const subs=(k.co||[]).map(empOf).filter(Boolean).map(x=>x.name);
+  let who_;if(o.eid){who_=k.emp===o.eid?(subs.length?`서브 ${esc(subs.join(', '))}`:''):`메인 <b>${esc(e?e.name:'')}</b>`}
+  else who_=`<b>${esc(e?e.name:'담당 없음')}</b>${subs.length?` · 서브 ${esc(subs.join(', '))}`:''}`;
+  let when;
+  if(k.rep)when='↻ '+esc(repLabel(k.rep,k.start))+(origOf(k,d)!==d?` · 이번만 옮김 (원래 ${md(origOf(k,d))})`:'');
+  else if(k.ongoing)when='상시 업무';
+  else if(num(k.prog)>=100)when=k.doneAt?`${md(k.doneAt)} 완료`:'완료';
+  else if(n<0)when=`<span class="bad">${md(k.due)} 마감 · ${-n}일 지남</span>`;
+  else if(n===0)when=`<span class="bad">${k.start<k.due?md(k.start)+' ~ 오늘':'오늘 당일'}</span>`;
+  else when=(k.start<k.due&&k.start>t?`${md(k.start)} → `:k.start<k.due?'~ ':'')+md(k.due)+(k.start>=k.due?' 당일':'')+(n>=2?` · D-${n}`:' · 내일');
+  const parts=[who_,when,k.time?`<span class="acc">${k.time}</span>`:''].filter(Boolean).join(' · ');
+  const memo=k.rep?memoOf(k,d):(dn&&k.dnote?'특이사항: '+k.dnote:k.note);
+  const act=(!k.rep&&!k.ongoing&&!dn&&n===0?`<button class="tmrb" data-tmr="${k.id}">내일로 넘기기</button>`:'')+movedTag(k)+(k.ex?'<span class="tag">예시</span>':'');
+  const attr=k.rep?`data-occ="${k.id}|${d}"`:`data-edit="${k.id}"`;
+  return `<div class="lrow ${dn?'done':''}" style="--c:${colorOf(e)}" ${attr}><i class="lbar"></i><div class="lmid"><div class="lt">${esc(k.title)}${k.pri===3&&!dn?'<span class="hotp">매우 중요</span>':''}</div><div class="ls">${parts}</div>${memo?`<div class="memo">📝 ${esc(memo)}</div>`:''}${act?`<div class="lact">${act}</div>`:''}</div>${k.ongoing?'':cbx(k,d)}</div>`}
+const rowSort=(a,b)=>(num(a.prog)>=100)-(num(b.prog)>=100)||hot(b)-hot(a)||a.due.localeCompare(b.due)||(a.time||'99').localeCompare(b.time||'99')||b.pri-a.pri;
+
 function renderToday(sc){
   const t=TODAY();
   $('todayLbl').textContent=md(t);
-  // alerts
-  const al=[];
-  S.tasks.filter(x=>num(x.prog)<100).forEach(x=>{
-    const e=empOf(x.emp),info=sc.byTask[x.id]||{},n=diff(t,x.due);
-    if(n<0)al.push(['p-bad',`마감 지남 ${dday(x.due)}`,x,e]);
-    else if(n===0)al.push(['p-bad','오늘 마감',x,e]);
-    else if(n===1)al.push(['p-warn','내일 마감',x,e]);
-  });
-  const rk=a=>a[1]==='오늘 마감'?1:a[1]==='내일 마감'?2:a[0]==='p-bad'?0:3;al.sort((a,b)=>rk(a)-rk(b)||a[2].due.localeCompare(b[2].due));
-  $('alerts').innerHTML=al.map(a=>`<div class="alert ${a[0]}" data-edit="${a[2].id}" style="cursor:pointer"><b>${a[1]}</b><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a[2].title)} · ${esc(who(a[2]))}</span></div>`).join('');
-  // per employee: tasks whose days include today, plus unfinished ones whose planned days already ended
-  $('todayList').innerHTML=S.emps.length?S.emps.map(e=>{
-    const c=colorOf(e);
+  $('sumToday').innerHTML=tilesHTML(openL());
+  $('alerts').innerHTML=''; // 마감 알림은 위 요약 칸으로 (월요일 리포트 안내만 여기 붙음)
+  const idle=[];
+  const cards=S.emps.map(e=>{
     // 오늘 마감 + 오늘이 기간(시작~마감) 안에 있는 일 (2026-10-12 사용자 요청)
-    const list=S.tasks.filter(x=>has(x,e.id)&&!x.rep&&!x.ongoing&&(x.due===t||(x.start<=t&&x.due>t&&(num(x.prog)<100||x.doneAt===t)))).sort((a,b)=>(num(a.prog)>=100)-(num(b.prog)>=100)||a.due.localeCompare(b.due)||(a.time||'99').localeCompare(b.time||'99')||b.pri-a.pri);
-    const ids=list.filter(x=>num(x.prog)<100).map(x=>x.id);
-    const rows=list.map(k=>{const dn=num(k.prog)>=100,est=estD(k),oth=withOthers(k,e.id);
-      return `<div class="slice ${dn?'done':''}" data-edit="${k.id}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span>${cbx(k)}
-        <span class="sub">${k.due===t?'<span class="pill p-bad">오늘 마감</span>':`<span class="pill p-warn">마감 ${md(k.due)} ${dday(k.due)}</span>`}${k.time?`<span class="pill p-acc">${k.time}</span>`:''}${k.pri===3?'<span class="pill p-bad">매우 중요</span>':''}${oth?`<span>${esc(oth)}</span>`:''}${k.ex?'<span class="tag">예시</span>':''}${dn||k.due!==t?'':`<button class="tmrb" data-tmr="${k.id}">내일로 넘기기</button>`}</span></div>`}).join('');
-    const on=[]; // 상시 업무는 주간·리포트에서만 보임
+    const list=S.tasks.filter(x=>has(x,e.id)&&!x.rep&&!x.ongoing&&(x.due===t||(x.start<=t&&x.due>t&&(num(x.prog)<100||x.doneAt===t)))).sort(rowSort);
     const rp=S.tasks.filter(x=>x.rep&&has(x,e.id)&&occOn(x,t));
-    const rRows=rp.map(k=>{const dn=repDone(k,t);return `<div class="slice ${dn?'done':''}" data-occ="${k.id}|${t}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span>${cbx(k,t)}<span class="sub">${k.time?`<span class="pill p-acc">${k.time}</span>`:''}<span>↻ ${repLabel(k.rep,k.start)}${origOf(k,t)!==t?` · 이번만 옮김 (원래 ${md(origOf(k,t))})`:''}</span>${memoOf(k,t)?`<span class="rmemo">메모: ${esc(memoOf(k,t))}</span>`:''}</span></div>`}).join('');
-    const oRows=on.map(k=>`<div class="slice" data-edit="${k.id}"><span class="dot" style="--c:${c}"></span><span class="t">${esc(k.title)}</span><span class="daystep" style="background:var(--soft);color:var(--muted)">상시</span><span class="sub"><span>진행 ${num(k.prog)}%</span></span></div>`).join('');
-    return `<section class="card" style="--c:${c}"><div class="emp-head"><span class="dot"></span><b>${esc(e.name)}</b><span class="load">오늘 ${ids.length}건${rp.length?` · 반복 ${rp.length}`:''}${on.length?` · 상시 ${on.length}`:''}</span></div>
-      ${rows||(on.length||rp.length?'':'<div class="empty">오늘 할 일이 없습니다</div>')}${rp.length?`<div class="rp-sec">반복 업무</div><div>${rRows}</div>`:''}${on.length?`<div class="rp-sec">상시 업무</div><div>${oRows}</div>`:''}</section>`}).join('')
+    if(!list.length&&!rp.length){idle.push(e.name);return ''}
+    const left=list.filter(x=>num(x.prog)<100).length+rp.filter(x=>!repDone(x,t)).length;
+    return `<section class="ecard" style="--c:${colorOf(e)}"><div class="ehead"><span class="dot"></span><b>${esc(e.name)}</b><span class="hint">${left?`남은 일 ${left}개`:'오늘 다 끝냄 ✓'}</span></div>${list.map(k=>rowHTML(k,{eid:e.id})).join('')}${rp.map(k=>rowHTML(k,{eid:e.id,date:t})).join('')}</section>`}).join('');
+  $('todayList').innerHTML=S.emps.length?(cards||'<section class="ecard"><div class="empty" style="padding:14px">오늘 할 일이 없습니다</div></section>')+(idle.length&&cards?`<div class="idle">오늘 할 일 없음 · ${esc(idle.join(', '))}</div>`:'')
   :'<section class="card"><div class="empty">직원 탭에서 직원을 먼저 추가하세요.</div></section>';
 }
 
@@ -593,20 +640,24 @@ const hot=t=>+(t.pri===3&&!t.rep&&!t.ongoing&&num(t.prog)<100&&diff(TODAY(),t.du
 function renderTasks(sc){
   try{laterUI()}catch(e){}
   $('filters').innerHTML=[['all','전체',null],...S.emps.map(e=>[e.id,e.name,e]),['done','완료',null]].map(([id,n,e])=>`<button class="fbtn" data-f="${id}" aria-pressed="${filt===id}">${e?`<span class="dot" style="--c:${colorOf(e)}"></span>`:''}${esc(n)}</button>`).join('');
-  const list=S.tasks.filter(t=>!t.ongoing).filter(t=>filt==='done'?num(t.prog)>=100:(num(t.prog)<100&&(filt==='all'||has(t,filt))))
-    .sort((a,b)=>hot(b)-hot(a)||a.due.localeCompare(b.due)||b.pri-a.pri);
-  $('taskCnt').textContent=list.length+'개';
-  $('taskList').innerHTML=list.length?list.map(t=>{
-    const e=empOf(t.emp),info=sc.byTask[t.id]||{days:[]},n=info.days.length,dn=diff(TODAY(),t.due);
-    const span=t.rep||t.ongoing?'':t.start>=t.due?`${md(t.due)} 당일`:`${md(t.start)} → ${md(t.due)}`;
-    const st=num(t.prog)>=100?'<span class="pill p-good">완료</span>':dn<0?'<span class="pill p-bad">마감 지남</span>':dn===0?'<span class="pill p-bad">마감 위험 · 오늘</span>':dn===1?'<span class="pill p-warn">'+dday(t.due)+'</span>':'';
-    return `<div class="task ${num(t.prog)>=100?'done':''} ${hot(t)?'hot':''}">
-      <div class="row1"><span class="dot" style="--c:${colorOf(e)}"></span><span class="t" data-edit="${t.id}">${esc(t.title)}</span>${st}${cbx(t)}</div>
-      ${span?`<div class="wd">${span}</div>`:''}
-      <div class="meta"><span>${esc(who(t)||'담당 없음')}</span>${t.time?`<span class="pill p-acc">${t.time}</span>`:''}${t.rep?`<span class="tag">↻ ${repLabel(t.rep,t.start)}</span>`:t.ongoing?'<span class="tag">상시 업무</span>':`<span>마감 ${md(t.due)} ${dday(t.due)}</span>`}${t.pri===3?'<span class="pill p-bad">매우 중요</span>':['낮음','','높음'][t.pri]?`<span class="tag">${['낮음','','높음'][t.pri]}</span>`:''}${t.ex?'<span class="tag">예시</span>':''}${movedTag(t)}</div>
-      ${t.rep&&!occOn(t,TODAY())?`<span class="hint">오늘은 없음${nextOcc(t)?" · 다음 "+md(nextOcc(t)):""}</span>`:""}
-    </div>`}).join(''):'<div class="empty">할일이 없습니다. 오른쪽 아래 + 할일로 추가하세요.</div>';
+  const mine=x=>filt==='all'||filt==='done'||has(x,filt);
+  let html='',cnt=0;
+  if(filt==='done'){
+    const L=S.tasks.filter(x=>!x.ongoing&&!x.rep&&num(x.prog)>=100).sort((a,b)=>(b.doneAt||'').localeCompare(a.doneAt||''));cnt=L.length;
+    $('sumTasks').hidden=true;
+    html=L.length?`<div class="gsec"><span>완료</span><b>${L.length}</b></div><div class="gcard">${L.map(k=>rowHTML(k)).join('')}</div>`:'';
+  }else{
+    const L=S.tasks.filter(x=>!x.ongoing&&num(x.prog)<100&&mine(x)),norm=L.filter(x=>!x.rep),reps=L.filter(x=>x.rep);cnt=L.length;
+    $('sumTasks').hidden=false;$('sumTasks').innerHTML=tilesHTML(norm);
+    html=GRP.map(([k,l,c])=>{const g=norm.filter(x=>groupOf(x)===k).sort(rowSort);return g.length?`<div class="gsec ${c}" id="g-${k}"><span>${l}</span><b>${g.length}</b></div><div class="gcard">${g.map(x=>rowHTML(x)).join('')}</div>`:''}).join('')
+      +(reps.length?`<div class="gsec" id="g-rep"><span>반복 업무</span><b>${reps.length}</b></div><div class="gcard">${reps.map(x=>rowHTML(x,{date:TODAY()})).join('')}</div>`:'');
+  }
+  $('taskCnt').textContent=cnt+'개';
+  $('taskList').innerHTML=html||'<section class="card"><div class="empty">할일이 없습니다. 오른쪽 아래 + 할일로 추가하세요.</div></section>';
 }
+// 요약 칸 누르면 할일 탭의 그 묶음으로
+document.addEventListener('click',e=>{const j=e.target.closest('[data-jump]');if(!j)return;e.stopPropagation();
+  filt='all';show('tasks');setTimeout(()=>{const g=$('g-'+j.dataset.jump);if(g)g.scrollIntoView({behavior:'smooth',block:'start'});else toast('해당하는 할일이 없습니다')},30)},true);
 
 // ---------- 직원·설정 ----------
 function renderTeam(){
