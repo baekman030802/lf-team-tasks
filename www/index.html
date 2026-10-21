@@ -579,8 +579,8 @@ function renderToday(sc){
   $('alerts').innerHTML=''; // 마감 알림은 위 요약 칸으로 (월요일 리포트 안내만 여기 붙음)
   const idle=[];
   const cards=S.emps.map(e=>{
-    // 오늘 마감 + 오늘이 기간(시작~마감) 안에 있는 일 (2026-10-12 사용자 요청)
-    const list=S.tasks.filter(x=>has(x,e.id)&&!x.rep&&!x.ongoing&&(x.due===t||(x.start<=t&&x.due>t&&(num(x.prog)<100||x.doneAt===t)))).sort(rowSort);
+    // 오늘 탭 = 마감 지남 + 오늘 마감만 (기간 중인 일은 할일 탭에서) (2026-10-21 사용자 요청)
+    const list=S.tasks.filter(x=>has(x,e.id)&&!x.rep&&!x.ongoing&&x.due<=t&&(num(x.prog)<100||x.doneAt===t)).sort(rowSort);
     const rp=S.tasks.filter(x=>x.rep&&has(x,e.id)&&occOn(x,t));
     if(!list.length&&!rp.length){idle.push(e.name);return ''}
     const left=list.filter(x=>num(x.prog)<100).length+rp.filter(x=>!repDone(x,t)).length;
