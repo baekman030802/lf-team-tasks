@@ -264,6 +264,7 @@ header h1{font-weight:800;letter-spacing:.06em;font-size:1.15rem}
 .ehead{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line)}
 .ehead b{font-size:.95rem}.ehead .hint{margin-left:auto}
 .idle{font-size:.8rem;color:var(--muted);padding:2px 4px}
+.lt-add button{flex:1}
 </style>
 </head><body>
 
@@ -442,9 +443,11 @@ header h1{font-weight:800;letter-spacing:.06em;font-size:1.15rem}
 <div class="sheet" id="lt" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="ltTitle">
     <h3 id="ltTitle">추후 할일 <span id="laterCnt" class="hint"></span></h3>
-    <div class="pair"><input id="newLater" type="text" placeholder="생각난 일을 적어두세요" autocomplete="off"><button id="addLater">추가</button></div>
+    <input id="newLater" type="text" placeholder="생각난 일을 적어두세요" autocomplete="off">
+    <label>날짜 (선택)<input id="newLaterDate" type="date"></label>
+    <div class="btns lt-add"><button id="addLater">일단 추가</button><button class="plain" id="addLaterFull">자세히 추가</button></div>
     <div id="laterList"></div>
-    <span class="hint">[할일로]를 누르면 내용이 채워진 할일 추가 창이 열립니다. 확인하고 저장하면 할일로 옮겨집니다.</span>
+    <span class="hint">[일단 추가]는 제목·날짜만, [자세히 추가]는 할일 추가와 같은 창으로 적어둡니다. [할일로]를 누르면 내용이 채워진 창이 열리고, 저장하면 할일로 옮겨집니다.</span>
     <div class="btns"><button class="plain" id="ltClose" style="margin-left:auto">닫기</button></div>
   </div>
 </div>
@@ -931,9 +934,16 @@ const laterL=()=>S.later||(S.later=[]);
 function laterUI(){const L=laterL();$('laterCnt').textContent=L.length?L.length+'개':'';
   const c2=$('laterCnt2');if(c2){c2.textContent=L.length;c2.hidden=!L.length;$('laterOpen').classList.toggle('has',L.some(x=>x.by==='claude'))}
   const det=x=>[x.emp?[x.emp,...(x.co||[])].map(id=>(empOf(id)||{}).name).filter(Boolean).join(', '):'',x.ongoing?'상시':x.due?(x.start&&x.start!==x.due?md(x.start)+'~'+md(x.due):md(x.due)):'',x.time||'',x.pri===3?'매우 중요':''].filter(Boolean).join(' · ');
-  $('laterList').innerHTML=L.length?L.map(x=>`<div class="emp-row"><span class="n">${esc(x.title)}<span class="hint" style="display:block">${det(x)?esc(det(x))+' · ':''}${md(x.at)} ${x.by==='claude'?'Claude가 넣음':'적음'}</span></span><button class="sm" data-tolater="${x.id}">할일로</button><button class="ghost sm" data-dellater="${x.id}">삭제</button></div>`).join(''):'<div class="empty">적어둔 일이 없습니다</div>'}
-function addLater(){const v=$('newLater').value.trim();if(!v){$('newLater').focus();return}
-  laterL().unshift({id:'l'+Date.now(),title:v,at:TODAY()});$('newLater').value='';save();render();toast('추후 할일에 적었습니다')}
+  $('laterList').innerHTML=L.length?L.map(x=>`<div class="emp-row"><span class="n">${esc(x.title)}<span class="hint" style="display:block">${x.by==='claude'?(det(x)?esc(det(x))+' · ':'')+md(x.at)+' Claude가 넣음':det(x)?esc(det(x)):'날짜 없음'}</span></span><button class="sm" data-tolater="${x.id}">할일로</button><button class="ghost sm" data-dellater="${x.id}">삭제</button></div>`).join(''):'<div class="empty">적어둔 일이 없습니다</div>'}
+function addLater(){const v=$('newLater').value.trim();if(!v){$('newLater').focus();return}const d=$('newLaterDate').value;
+  laterL().unshift({id:'l'+Date.now(),title:v,at:TODAY(),...(d?{start:d,due:d}:{})});$('newLater').value='';$('newLaterDate').value='';save();render();toast('추후 할일에 적었습니다')}
+// 자세히 추가: 할일 추가와 같은 창 → 저장하면 추후 할일(임시)로
+let laterDraft=false;
+$('addLaterFull').addEventListener('click',()=>{const v=$('newLater').value.trim(),d=$('newLaterDate').value;
+  $('lt').hidden=true;openSheet(null);if($('sheet').hidden)return;laterDraft=true;titleManual=true;
+  $('fPreset').hidden=true;$('fTitle').hidden=false;$('fTitle').value=v;$('fManual').textContent='목록에서 고르기';
+  $('shTitle').textContent='추후 할일 · 자세히 추가';$('fSave').textContent='추후 할일에 저장';
+  if(d){$('fStart').value=d;$('fDue').value=d;repOptions()}preview();setTimeout(()=>$('fTitle').focus(),60)});
 $('addLater').addEventListener('click',addLater);
 $('laterOpen').addEventListener('click',()=>{laterUI();$('lt').hidden=false});
 $('ltClose').addEventListener('click',()=>$('lt').hidden=true);
@@ -948,6 +958,7 @@ document.addEventListener('click',e=>{
     if(x.start)$('fStart').value=x.start;if(x.due)$('fDue').value=x.due;else if(x.start)$('fDue').value=x.start;
     if(x.ongoing)$('fOngoing').checked=true;else if(x.start&&x.due&&x.start===x.due)$('fDay').checked=true;
     if(x.time)$('fTime').value=x.time;if(x.pri!=null)$('fPri').value=String(x.pri);if(x.note)$('fNote').value=x.note;
+    if(x.rep){repOptions();$('fRep').value=x.rep.type;if(x.rep.days&&x.rep.days.length)repDays=x.rep.days.slice()}
     ongoingUI();preview()}
 });
 
@@ -1018,7 +1029,8 @@ function openSheet(id){
   $('fDel').hidden=!t;delete $('fDel').dataset.arm;$('fDel').textContent='삭제';
   $('sheet').hidden=false;preview();setTimeout(()=>{if(!$('fTitle').hidden)$('fTitle').focus()},50);
 }
-function closeSheet(){$('sheet').hidden=true;editId=null;pendingLater=null}
+function closeSheet(){const back=typeof laterDraft!=='undefined'&&laterDraft;$('sheet').hidden=true;editId=null;pendingLater=null;
+  if(back){laterDraft=false;$('fSave').textContent='저장';laterUI();$('lt').hidden=false}}
 let repDays=[];
 function repOptions(){const s=$('fStart').value||TODAY(),x=parse(s),cur=$('fRep').value||'none';
   $('fRep').innerHTML=[['none','반복 안함'],['daily','매일 (근무일)'],['weekly',`매주 ${DOW[x.getDay()]}요일`],['weekdays','주중 매일(월-금)'],['monthly',`매월 ${x.getDate()}일`],['custom','맞춤 (요일 고르기)']].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
@@ -1059,6 +1071,9 @@ $('fSave').addEventListener('click',()=>{
   let start=$('fStart').value||TODAY(),due=(ongoing||isRep)?NODUE:sameDay?start:($('fDue').value||start);
   if(due<start){toast('데드라인이 시작일보다 빠릅니다');return}
   const data={time:ongoing?'':($('fTime').value||''),title,emp:selEmps[0],co:selEmps.slice(1),pri:+$('fPri').value,start,due,ongoing:ongoing?1:0,rep:isRep?{type:rp,days:rp==='custom'?repDays.slice():[]}:null,est:(ongoing||isRep||sameDay)?1:(()=>{let n=0,x=start,g=0;while(x<=due&&g++<400){if(isWork(x))n++;x=add(x,1)}return Math.max(1,n)})(),note:$('fNote').value};
+  if(laterDraft&&!editId){const it={id:'l'+Date.now(),title,at:TODAY(),emp:data.emp,co:data.co,start,pri:data.pri,time:data.time,note:data.note};
+    if(!ongoing&&!isRep)it.due=due;if(ongoing)it.ongoing=1;if(isRep)it.rep=data.rep;
+    laterL().unshift(it);$('newLater').value='';$('newLaterDate').value='';save();closeSheet();render();toast('추후 할일에 적었습니다');return}
   if(editId){Object.assign(S.tasks.find(x=>x.id===editId),data,{ex:0})}
   else S.tasks.push({id:'t'+Date.now(),prog:0,created:Date.now(),hist:[[TODAY(),0]],...data});
   const fromLater=!editId&&pendingLater;if(fromLater)S.later=(S.later||[]).filter(x=>x.id!==pendingLater);
