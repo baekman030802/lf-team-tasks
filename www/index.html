@@ -698,15 +698,15 @@ function weekData(ws,we,asPast){
     const done=mine.filter(t=>t.doneAt&&t.doneAt>=ws&&t.doneAt<=we).sort((a,b)=>a.doneAt.localeCompare(b.doneAt));
     const reps=mine.filter(t=>t.rep&&t.start<=we);
     const ong=mine.filter(t=>t.ongoing&&t.start<=we&&!(t.doneAt&&t.doneAt<=we));
-    // 진행 중: 이 주까지 시작한 일 + 아직 시작 전이어도 그 주에 이미 있던 일(미래 마감) → 끝날 때까지 매주 나옴 (2026-10-21 요청)
-    const weEnd=parse(add(we,1)).getTime();
-    const open=mine.filter(t=>!t.ongoing&&!t.rep&&((t.origStart||t.start)<=we||(()=>{const ct=t.created||+(String(t.id).match(/\d{13}/)||[0])[0];return !ct||ct<weEnd})())&&(t.doneAt?t.doneAt>we:num(t.prog)<100)).sort((a,b)=>a.due.localeCompare(b.due));
+    // 진행 중: 이번 주까지는 이 주까지 시작한 일(지난 마감 포함), 앞으로의 주는 설정한 기간(시작~마감)이 그 주에 걸친 일만 (2026-10-23 요청)
+    const fut=ws>TODAY();
+    const open=mine.filter(t=>!t.ongoing&&!t.rep&&(fut?(t.start<=we&&t.due>=ws):(t.origStart||t.start)<=we)&&(t.doneAt?t.doneAt>we:num(t.prog)<100)).sort((a,b)=>a.due.localeCompare(b.due));
     return {e,done,open,ong,reps,late:open.filter(t=>dueOf(t)<ref)};
   });
   const uniq=a=>[...new Map(a.map(t=>[t.id,t])).values()],sum=k=>uniq(emps.flatMap(x=>x[k])).length,all=uniq(emps.flatMap(x=>x.done)),ok=all.filter(t=>t.doneAt<=dueOf(t)).length;
   return {ws,we,past,ref,emps,nDone:sum('done'),nOpen:sum('open'),nLate:sum('late'),rate:all.length?Math.round(ok/all.length*100):null};
 }
-let rpOff=-1;
+let rpOff=-1;const RPMAX=8; // 앞으로 8주까지 미리 보기
 const rpRange=()=>{const ws=add(monOf(TODAY()),7*rpOff);return [ws,add(ws,6)]};
 // ---------- 리포트 스냅샷: 지난 주는 처음 볼 때(또는 앱 열 때) 그대로 저장 → 이후 수정해도 안 바뀜 ----------
 function makeSnap(ws,we){const past=we<TODAY(),R=weekData(ws,we,past),until=past?we:TODAY();
@@ -715,7 +715,7 @@ function makeSnap(ws,we){const past=we<TODAY(),R=weekData(ws,we,past),until=past
   return {ws,we,at:Date.now(),k:[R.nDone,R.nOpen,R.nLate],
     emps:R.emps.map(({e,done,open,ong,reps})=>({n:e.name,c:e.c,hex:e.hex||'',
       done:done.map(t=>({t:t.title,late:t.doneAt>dueOf(t),early:!t.rep&&!t.ongoing&&t.due>we?t.due:'',d:t.doneAt,co:co(t),mv:t.moves||0,note:t.note||'',sp:t.dnote||''})),
-      open:open.map(t=>({t:t.title,late:dueOf(t)<R.ref,due:t.due,st:t.start>we?t.start:'',co:co(t),mv:t.moves||0,note:t.note||''})),
+      open:open.map(t=>({t:t.title,late:dueOf(t)<R.ref,due:t.due,st:t.start>TODAY()?t.start:'',co:co(t),mv:t.moves||0,note:t.note||''})),
       reps:reps.map(t=>{const [ok,n]=repCount(t,ws,we,until);return {t:t.title,ok,n,m:memos(t),co:co(t)}}).filter(x=>x.n>0),
       ong:ong.map(t=>({t:t.title,g:gain(t,ws,we),note:t.note||''}))}))}}
 function getSnap(ws,we){if(we>=TODAY())return makeSnap(ws,we);
@@ -727,21 +727,21 @@ function renderReport(sc){
   const [ws,we]=rpRange(),P=getSnap(ws,we);
   const cl=carryList(ws,we,sc),tgt=carryTarget(we),where=tgt<=TODAY()?'이번 주로':'다음 주로';
   const capped=carryList(ws,we,sc,true).length-cl.length;
-  $('rpLbl').textContent=`${md(ws)} – ${md(we)}`+(rpOff===0?' · 이번 주':rpOff===-1?' · 지난주':'');
-  $('rpNext').disabled=rpOff>=0;
-  $('rpKpi').innerHTML=[['완료',P.k[0],'good'],['진행 중',P.k[1],'acc'],['마감 지남',P.k[2],P.k[2]?'bad':'']]
+  $('rpLbl').textContent=`${md(ws)} – ${md(we)}`+(rpOff===0?' · 이번 주':rpOff===-1?' · 지난주':rpOff===1?' · 다음 주':rpOff>1?` · ${rpOff}주 후`:'');
+  $('rpNext').disabled=rpOff>=RPMAX;
+  $('rpKpi').innerHTML=[['완료',P.k[0],'good'],[rpOff>0?'예정':'진행 중',P.k[1],'acc'],['마감 지남',P.k[2],P.k[2]?'bad':'']]
     .map(([l,v,c])=>`<div class="kpi ${c}"><b>${v}</b><span>${l}</span></div>`).join('')
-    +`<div class="rp-lock" style="grid-column:1/-1">${P.frozen?`확정된 리포트 · ${md(fmt(new Date(P.at)))} 기준 · 수정할 수 없습니다`:'이번 주는 진행 중 · 주가 끝나면 확정됩니다'}</div>`;
-  $('rpCarry').innerHTML=(cl.length?`<button class="carry-btn" data-carryall>못 끝낸 일 ${cl.length}건 ${where} 넘기기</button>`:'')
-    +(capped?`<div class="hint" style="color:var(--bad);margin-top:6px">${capped}건은 3번 넘겨서 더 못 넘깁니다. 할일 탭에서 날짜를 직접 정해주세요.</div>`:'');
+    +`<div class="rp-lock" style="grid-column:1/-1">${rpOff>0?'앞으로의 주 · 설정한 날짜 기준 예정된 일':P.frozen?`확정된 리포트 · ${md(fmt(new Date(P.at)))} 기준 · 수정할 수 없습니다`:'이번 주는 진행 중 · 주가 끝나면 확정됩니다'}</div>`;
+  $('rpCarry').innerHTML=(cl.length&&rpOff<=0?`<button class="carry-btn" data-carryall>못 끝낸 일 ${cl.length}건 ${where} 넘기기</button>`:'')
+    +(capped&&rpOff<=0?`<div class="hint" style="color:var(--bad);margin-top:6px">${capped}건은 3번 넘겨서 더 못 넘깁니다. 할일 탭에서 날짜를 직접 정해주세요.</div>`:'');
   $('rpNote').textContent='';
   const tt=x=>`<span class="tt"><span class="t">${esc(x.t)}</span>${Array.isArray(x.co)&&x.co.length?`<span class="tag">서브: ${esc(x.co.join(', '))}</span>`:''}${x.mv?`<span class="mvb mv${Math.min(x.mv,3)}">${x.mv}번 밀림</span>`:''}</span>`;
   const nt=v=>v?`<span class="nt">${esc(v)}</span>`:'';
   $('rpList').innerHTML=P.emps.length?P.emps.map(v=>{const tot=v.done.length+v.open.length+v.reps.length;
     return `<section class="card" style="--c:${colorOf(v)}">
-      <div class="emp-head"><span class="dot"></span><b>${esc(v.n)}</b><span class="load">완료 ${v.done.length} · 진행 ${v.open.length}</span></div>
+      <div class="emp-head"><span class="dot"></span><b>${esc(v.n)}</b><span class="load">${rpOff>0?`예정 ${v.open.length}`:`완료 ${v.done.length} · 진행 ${v.open.length}`}</span></div>
       ${v.done.length?`<div class="rp-sec">완료</div><div>${v.done.map(x=>`<div class="rr">${tt(x)}<span class="st ${x.late?'bad':'ok'}">${x.late?'늦게 완료':x.early?'미리 완료':'✓ 완료'}</span>${x.early?nt('마감 '+md(x.early)+' · '+md(x.d)+' 완료'):''}${x.sp?nt('특이사항 · '+x.sp):''}${nt(x.note)}</div>`).join('')}</div>`:''}
-      ${v.open.length?`<div class="rp-sec">진행 중</div><div>${v.open.map(x=>`<div class="rr">${tt(x)}<span class="st ${x.late?'bad':''}">${x.late?'지남':x.st?'예정':'진행 중'}</span>${x.due?nt((x.st?'시작 '+md(x.st)+' · ':'')+'마감 '+md(x.due)):''}${nt(x.note)}</div>`).join('')}</div>`:''}
+      ${v.open.length?`<div class="rp-sec">${rpOff>0?'예정된 일':'진행 중'}</div><div>${v.open.map(x=>`<div class="rr">${tt(x)}<span class="st ${x.late?'bad':''}">${x.late?'지남':x.st?'예정':'진행 중'}</span>${x.due?nt((x.st?'시작 '+md(x.st)+' · ':'')+'마감 '+md(x.due)):''}${nt(x.note)}</div>`).join('')}</div>`:''}
       ${v.reps.length?`<div class="rp-sec">반복 업무</div><div>${v.reps.map(x=>`<div class="rr">${tt(x)}<span class="st ${x.ok===x.n?'ok':P.frozen?'bad':''}">${x.ok}/${x.n}회</span>${x.m.map(([d,m])=>nt(md(d)+' · '+m)).join('')}</div>`).join('')}</div>`:''}
       ${tot?'':'<div class="empty">기록 없음</div>'}
     </section>`}).join(''):'<section class="card"><div class="empty">직원을 먼저 추가하세요.</div></section>';
@@ -760,7 +760,7 @@ function rpText(){
   return L.join('\n');
 }
 $('rpPrev').addEventListener('click',()=>{rpOff--;render()});
-$('rpNext').addEventListener('click',()=>{if(rpOff<0){rpOff++;render()}});
+$('rpNext').addEventListener('click',()=>{if(rpOff<RPMAX){rpOff++;render()}});
 $('rpCopy').addEventListener('click',()=>{const txt=rpText();
   const fb=()=>{const a=document.createElement('textarea');a.value=txt;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('복사했습니다')}catch(e){toast('복사 실패')}a.remove()};
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(()=>toast('복사했습니다'),fb);else fb();
